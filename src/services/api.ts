@@ -3,8 +3,7 @@ import type { AxiosInstance, AxiosResponse, AxiosError } from "axios";
 import { STORAGE_KEYS } from "../utils/constants";
 
 // API base URL - will be set from environment variables
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
