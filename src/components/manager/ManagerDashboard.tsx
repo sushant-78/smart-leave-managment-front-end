@@ -59,11 +59,6 @@ const ManagerDashboard = () => {
   }, [dashboardData, loading]);
 
   // Debug: Log dashboard data when it changes
-  useEffect(() => {
-    if (dashboardData) {
-      // Removed console.log
-    }
-  }, [dashboardData]);
 
   // Handle error with toast
   useEffect(() => {

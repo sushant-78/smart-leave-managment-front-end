@@ -55,8 +55,6 @@ const LeaveApplicationForm: React.FC<LeaveApplicationFormProps> = ({
     user?.role === "manager"
       ? managerDashboardData
       : employeeState.dashboardData;
-  console.log("user: ", user);
-  console.log("dashboardData: ", dashboardData);
 
   // Fetch manager dashboard data if user is a manager
   useEffect(() => {
@@ -69,8 +67,7 @@ const LeaveApplicationForm: React.FC<LeaveApplicationFormProps> = ({
           );
           const data = await fetchManagerDashboard();
           setManagerDashboardData(data);
-        } catch (error) {
-          console.error("Error fetching manager dashboard:", error);
+        } catch {
         } finally {
           setManagerLoading(false);
         }
@@ -102,7 +99,6 @@ const LeaveApplicationForm: React.FC<LeaveApplicationFormProps> = ({
       user.manager_id !== null &&
       user.manager_id !== undefined);
 
-  console.log("hasManager: ", hasManager);
   useEffect(() => {
     // Only fetch leaves when user starts interacting with date fields
     if (!leavesLoaded && (formData.from_date || formData.to_date)) {
@@ -376,7 +372,6 @@ const LeaveApplicationForm: React.FC<LeaveApplicationFormProps> = ({
       }
 
       // Show error toast and also log for debugging
-      console.error("Leave application submission error:", error);
       showToast.error(errorMessage);
     } finally {
       setSubmitting(false);

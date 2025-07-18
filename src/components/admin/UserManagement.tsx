@@ -173,33 +173,28 @@ const UserManagement = () => {
               formData.role === "employee" ? formData.manager_id || null : null,
           },
         };
-        console.log("Update user payload:", updatePayload);
         await dispatch(updateUser(updatePayload)).unwrap();
         showToast.success("User updated successfully!");
       } else {
-        // Create user - email will be the password
         const createPayload = {
           name: formData.name,
           email: formData.email,
-          password: formData.email, // Email is the password
+          password: formData.email,
           role: formData.role,
           manager_id:
-            formData.role === "employee" ? formData.manager_id || null : null, // Managers should have null manager_id
+            formData.role === "employee" ? formData.manager_id || null : null,
         };
 
-        console.log("Create user payload:", createPayload);
         await dispatch(createUser(createPayload)).unwrap();
         showToast.success(
           "User created successfully! Email is set as the password."
         );
 
-        // Refresh managers list after creating a user
         dispatch(fetchManagers());
       }
       handleCloseDialog();
-    } catch (error) {
-      console.error("User operation failed:", error);
-      // The error will be handled by the Redux slice and displayed via useEffect
+    } catch {
+      // Error handled by Redux slice
     }
   };
 
@@ -216,9 +211,8 @@ const UserManagement = () => {
       showToast.success("User deleted successfully!");
       setDeleteDialog(false);
       setUserToDelete(null);
-    } catch (error) {
-      console.error("Delete user failed:", error);
-      // The error will be handled by the Redux slice and displayed via useEffect
+    } catch {
+      // Error handled by Redux slice
     }
   };
 

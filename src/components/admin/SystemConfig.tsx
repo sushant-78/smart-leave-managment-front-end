@@ -283,8 +283,7 @@ const SystemConfig = () => {
           showToast.success("Leave types saved successfully!");
           break;
       }
-    } catch (error) {
-      console.error("Failed to save configuration:", error);
+    } catch {
       showToast.error("Failed to save configuration. Please try again.");
     }
   };

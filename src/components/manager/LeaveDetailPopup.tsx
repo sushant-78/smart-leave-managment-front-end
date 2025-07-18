@@ -56,7 +56,7 @@ const LeaveDetailPopup: React.FC<LeaveDetailPopupProps> = ({
 
     setLoading(true);
     try {
-      const result = await dispatch(
+      await dispatch(
         approveLeave({
           leaveId: leave.id,
           approvalData: {
@@ -66,20 +66,17 @@ const LeaveDetailPopup: React.FC<LeaveDetailPopupProps> = ({
         })
       ).unwrap();
 
-      console.log("Leave approval result:", result);
       showToast.success(
         `Leave ${
           actionType === "approve" ? "approved" : "rejected"
         } successfully!`
       );
 
-      // Refetch manager data to get updated information
       await dispatch(fetchManagerUsers());
       await dispatch(fetchManagerLeaves());
 
       onClose();
-    } catch (error) {
-      console.error("Leave approval error:", error);
+    } catch {
       showToast.error(`Failed to ${actionType} leave. Please try again.`);
     } finally {
       setLoading(false);

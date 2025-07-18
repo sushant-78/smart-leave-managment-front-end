@@ -22,7 +22,6 @@ import AdminManagerDetailPage from "./components/admin/AdminManagerDetailPage";
 import { useAuthError } from "./hooks/useAuthError";
 import RoleBasedRedirect from "./components/common/RoleBasedRedirect";
 
-// Admin route components
 import AdminDashboard from "./components/admin/AdminDashboard";
 import AdminUsers from "./components/admin/AdminUsers";
 import AdminTeam from "./components/admin/AdminTeam";
@@ -31,14 +30,12 @@ import AdminLeaves from "./components/admin/AdminLeaves";
 import AdminAudit from "./components/admin/AdminAudit";
 import AdminReports from "./components/admin/AdminReports";
 
-// Manager route components
 import ManagerDashboard from "./components/manager/ManagerDashboard";
 import ManagerApplyLeave from "./components/manager/ManagerApplyLeave";
 import ManagerHistory from "./components/manager/ManagerHistory";
 import ManagerProfile from "./components/manager/ManagerProfile";
 import ManagerTeam from "./components/manager/ManagerTeam";
 
-// Create theme
 const theme = createTheme({
   palette: {
     primary: {
@@ -120,18 +117,13 @@ const theme = createTheme({
   },
 });
 
-// AppRoutes component to use hooks
 const AppRoutes = () => {
-  // Handle 401 errors globally
   useAuthError();
 
   return (
     <Routes>
-      {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/404" element={<NotFoundPage />} />
-
-      {/* Employee routes */}
       <Route
         path="/employee/dashboard"
         element={
@@ -164,8 +156,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
-      {/* Manager routes */}
       <Route
         path="/manager/dashboard"
         element={
@@ -215,8 +205,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
-      {/* Admin routes */}
       <Route
         path="/admin/dashboard"
         element={
@@ -290,10 +278,8 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Default redirect - role-based */}
       <Route path="/" element={<RoleBasedRedirect />} />
 
-      {/* Catch all - 404 */}
       <Route path="*" element={<Navigate to="/404" replace />} />
     </Routes>
   );

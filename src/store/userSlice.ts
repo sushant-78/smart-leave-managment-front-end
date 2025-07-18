@@ -6,7 +6,6 @@ import type {
 } from "../services/userService";
 import type { User } from "../services/authService";
 
-// User state interface
 interface UserState {
   users: User[];
   unassignedUsers: User[];
@@ -21,7 +20,6 @@ interface UserState {
   };
 }
 
-// Initial state
 const initialState: UserState = {
   users: [],
   unassignedUsers: [],
@@ -36,7 +34,6 @@ const initialState: UserState = {
   },
 };
 
-// Async thunks
 export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
   async ({ page = 1, limit = 10 }: { page?: number; limit?: number }) => {
@@ -68,7 +65,6 @@ export const createUser = createAsyncThunk(
       const response = await userService.createUser(userData);
       return response.data;
     } catch (error) {
-      // Extract server error message from response
       const axiosError = error as {
         response?: { data?: { message?: string } };
       };
@@ -90,7 +86,6 @@ export const updateUser = createAsyncThunk(
       const response = await userService.updateUser(id, userData);
       return response.data;
     } catch (error) {
-      // Extract server error message from response
       const axiosError = error as {
         response?: { data?: { message?: string } };
       };
@@ -110,7 +105,6 @@ export const deleteUser = createAsyncThunk(
   }
 );
 
-// User slice
 const userSlice = createSlice({
   name: "users",
   initialState,
@@ -130,7 +124,6 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch users
       .addCase(fetchUsers.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -144,7 +137,6 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Failed to fetch users";
       })
-      // Fetch unassigned users
       .addCase(fetchUnassignedUsers.pending, (state) => {
         state.loading = true;
       })
@@ -157,7 +149,6 @@ const userSlice = createSlice({
         state.error =
           action.error.message || "Failed to fetch unassigned users";
       })
-      // Fetch managers
       .addCase(fetchManagers.pending, (state) => {
         state.loading = true;
       })
@@ -169,7 +160,6 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Failed to fetch managers";
       })
-      // Create user
       .addCase(createUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -180,14 +170,12 @@ const userSlice = createSlice({
       })
       .addCase(createUser.rejected, (state, action) => {
         state.loading = false;
-        // Extract server error message from the response
         const errorMessage =
           (action.payload as { message?: string })?.message ||
           action.error.message ||
           "Failed to create user";
         state.error = errorMessage;
       })
-      // Update user
       .addCase(updateUser.pending, (state) => {
         state.loading = true;
       })
@@ -209,7 +197,6 @@ const userSlice = createSlice({
           "Failed to update user";
         state.error = errorMessage;
       })
-      // Delete user
       .addCase(deleteUser.pending, (state) => {
         state.loading = true;
       })
