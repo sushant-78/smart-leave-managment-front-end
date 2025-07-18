@@ -2,31 +2,26 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { employeeService } from "../services/employeeService";
 import type { EmployeeDashboardResponse } from "../services/employeeService";
 
-// Employee state interface
 interface EmployeeState {
   dashboardData: EmployeeDashboardResponse | null;
   loading: boolean;
   error: string | null;
 }
 
-// Initial state
 const initialState: EmployeeState = {
   dashboardData: null,
   loading: false,
   error: null,
 };
 
-// Async thunks
 export const fetchEmployeeDashboard = createAsyncThunk(
   "employee/fetchDashboard",
   async () => {
     const response = await employeeService.getDashboardData();
-    console.log("response 24", response);
     return response;
   }
 );
 
-// Employee slice
 const employeeSlice = createSlice({
   name: "employee",
   initialState,
@@ -40,7 +35,6 @@ const employeeSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch employee dashboard
       .addCase(fetchEmployeeDashboard.pending, (state) => {
         state.loading = true;
         state.error = null;

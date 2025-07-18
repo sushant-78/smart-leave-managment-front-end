@@ -14,19 +14,19 @@ const NotFoundPage = () => {
     if (user) {
       switch (user.role) {
         case "admin":
-          navigate("/admin");
+          navigate("/admin/dashboard");
           break;
         case "manager":
-          navigate("/manager");
+          navigate("/manager/dashboard");
           break;
         case "employee":
-          navigate("/dashboard");
+          navigate("/employee/dashboard");
           break;
         default:
-          navigate("/dashboard");
+          navigate("/employee/dashboard");
       }
     } else {
-      navigate("/dashboard");
+      navigate("/employee/dashboard");
     }
   };
 

@@ -48,11 +48,11 @@ const RoleBasedRedirect = () => {
   // Redirect based on user role
   switch (user.role) {
     case "admin":
-      return <Navigate to="/admin" replace />;
+      return <Navigate to="/admin/dashboard" replace />;
     case "manager":
-      return <Navigate to="/manager" replace />;
+      return <Navigate to="/manager/dashboard" replace />;
     case "employee":
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to="/employee/dashboard" replace />;
     default:
       // Invalid role - redirect to 404
       return <Navigate to="/404" replace />;

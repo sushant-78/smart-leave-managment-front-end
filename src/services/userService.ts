@@ -31,6 +31,19 @@ export interface UpdateUserRequest {
   manager_id?: number | null;
 }
 
+// Manager user types
+export interface AssignedUser extends User {
+  leave_balances: {
+    casual?: { total: number; used: number; remaining: number };
+    sick?: { total: number; used: number; remaining: number };
+    earned?: { total: number; used: number; remaining: number };
+  };
+}
+
+export interface AssignedUsersResponse {
+  users: AssignedUser[];
+}
+
 // User management service
 export const userService = {
   // Get all users with pagination
@@ -90,6 +103,14 @@ export const userService = {
   async deleteUser(id: number): Promise<ApiResponse<{ message: string }>> {
     const response = await api.delete<ApiResponse<{ message: string }>>(
       `/users/${id}`
+    );
+    return response.data;
+  },
+
+  // Get all users assigned to the current manager
+  async getManagerUsers(): Promise<ApiResponse<AssignedUsersResponse>> {
+    const response = await api.get<ApiResponse<AssignedUsersResponse>>(
+      "/managers/users"
     );
     return response.data;
   },

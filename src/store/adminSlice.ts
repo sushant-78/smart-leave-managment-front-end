@@ -8,12 +8,20 @@ import type {
   UpdateWorkingDaysRequest,
   UpdateLeaveTypesRequest,
 } from "../services/adminService";
+import type { AssignedUser } from "../services/userService";
+import type { ManagerLeave } from "../services/leaveService";
+
+// Import approveLeave from leaveSlice to handle it in adminSlice
+import { approveLeave } from "./leaveSlice";
 
 // Admin state interface
 interface AdminState {
   dashboardStats: DashboardStats | null;
   systemConfig: SystemConfig | null;
   auditLogs: AuditLog[];
+  // Team management state
+  assignedManagers: AssignedUser[];
+  teamLeaves: ManagerLeave[];
   loading: boolean;
   error: string | null;
   pagination: {
@@ -29,6 +37,9 @@ const initialState: AdminState = {
   dashboardStats: null,
   systemConfig: null,
   auditLogs: [],
+  // Team management state
+  assignedManagers: [],
+  teamLeaves: [],
   loading: false,
   error: null,
   pagination: {
@@ -113,6 +124,31 @@ export const fetchAuditLogsWithFilters = createAsyncThunk(
     action_type?: string;
   }) => {
     const response = await adminService.getAuditLogsWithFilters(params);
+    return response.data;
+  }
+);
+
+// Admin team management thunks
+export const fetchAdminManagers = createAsyncThunk(
+  "admin/fetchAdminManagers",
+  async () => {
+    const response = await adminService.getAdminManagers();
+    return response.data;
+  }
+);
+
+export const fetchAdminLeaves = createAsyncThunk(
+  "admin/fetchAdminLeaves",
+  async () => {
+    const response = await adminService.getAdminLeaves();
+    return response.data;
+  }
+);
+
+export const fetchAdminManagerLeaves = createAsyncThunk(
+  "admin/fetchAdminManagerLeaves",
+  async () => {
+    const response = await adminService.getAdminManagerLeaves();
     return response.data;
   }
 );
@@ -254,6 +290,55 @@ const adminSlice = createSlice({
       .addCase(fetchAuditLogsWithFilters.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch audit logs";
+      })
+      // Fetch admin managers
+      .addCase(fetchAdminManagers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdminManagers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.assignedManagers = action.payload.managers;
+      })
+      .addCase(fetchAdminManagers.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.error.message || "Failed to fetch assigned managers";
+      })
+      // Fetch admin leaves
+      .addCase(fetchAdminLeaves.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdminLeaves.fulfilled, (state, action) => {
+        state.loading = false;
+        state.teamLeaves = action.payload.leaves;
+      })
+      .addCase(fetchAdminLeaves.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch team leaves";
+      })
+      // Fetch admin manager leaves
+      .addCase(fetchAdminManagerLeaves.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdminManagerLeaves.fulfilled, (state, action) => {
+        state.loading = false;
+        state.teamLeaves = action.payload.leaves;
+      })
+      .addCase(fetchAdminManagerLeaves.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch manager leaves";
+      })
+      // Handle approveLeave action to refetch data
+      .addCase(approveLeave.fulfilled, () => {
+        // Refetch both managers and leaves to get updated data
+        // The actual refetch will be triggered by the component
+      })
+      .addCase(approveLeave.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to approve leave";
       });
   },
 });

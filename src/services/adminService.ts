@@ -2,6 +2,8 @@ import api from "./api";
 import type { ApiResponse, Pagination } from "./api";
 import type { User } from "./authService";
 import type { Leave } from "./leaveService";
+import type { AssignedUser } from "./userService";
+import type { ManagerLeave } from "./leaveService";
 
 // Types based on the dummy responses
 export interface SystemConfig {
@@ -215,6 +217,33 @@ export const adminService = {
   ): Promise<ApiResponse<AuditLogsResponse>> {
     const response = await api.get<ApiResponse<AuditLogsResponse>>(
       `/audit/me?page=${page}&limit=${limit}`
+    );
+    return response.data;
+  },
+
+  // Admin team management APIs
+  // Get all managers assigned to admin
+  async getAdminManagers(): Promise<ApiResponse<{ managers: AssignedUser[] }>> {
+    const response = await api.get<ApiResponse<{ managers: AssignedUser[] }>>(
+      "/admin/managers"
+    );
+    return response.data;
+  },
+
+  // Get all leaves for admin's managers
+  async getAdminLeaves(): Promise<ApiResponse<{ leaves: ManagerLeave[] }>> {
+    const response = await api.get<ApiResponse<{ leaves: ManagerLeave[] }>>(
+      "/api/admin/leaves"
+    );
+    return response.data;
+  },
+
+  // Get all manager leaves for admin
+  async getAdminManagerLeaves(): Promise<
+    ApiResponse<{ leaves: ManagerLeave[] }>
+  > {
+    const response = await api.get<ApiResponse<{ leaves: ManagerLeave[] }>>(
+      "/admin/managers/leaves"
     );
     return response.data;
   },

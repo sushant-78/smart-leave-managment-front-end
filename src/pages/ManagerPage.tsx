@@ -1,60 +1,43 @@
 import { useState } from "react";
-import { Dashboard, People, Assessment, Event } from "@mui/icons-material";
-import { Container, Typography, Box } from "@mui/material";
+import { Dashboard, People, Event, History, Person } from "@mui/icons-material";
+import { Container, Typography, Box, Paper } from "@mui/material";
+import { useSelector } from "react-redux";
+import type { RootState } from "../store";
 import Navbar from "../components/common/Navbar";
+import ManagerDashboard from "../components/manager/ManagerDashboard";
+import LeaveApplicationForm from "../components/leaves/LeaveApplicationForm";
+import LeaveHistory from "../components/leaves/LeaveHistory";
+import TeamManagement from "../components/manager/TeamManagement";
 
-// Placeholder components for manager features
-const ManagerDashboard = () => (
-  <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Manager Dashboard
-      </Typography>
-      <Typography variant="body1">
-        Manager dashboard with team overview and quick actions.
-      </Typography>
-    </Box>
-  </Container>
-);
+const Profile = () => {
+  const { user } = useSelector((state: RootState) => state.auth) as {
+    user: { name: string; email: string; role: string; id?: number } | null;
+  };
 
-const TeamManagement = () => (
-  <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Team Management
-      </Typography>
-      <Typography variant="body1">
-        Manage your team members and their leave requests.
-      </Typography>
-    </Box>
-  </Container>
-);
-
-const Approvals = () => (
-  <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Leave Approvals
-      </Typography>
-      <Typography variant="body1">
-        Review and approve/reject leave requests from your team.
-      </Typography>
-    </Box>
-  </Container>
-);
-
-const Reports = () => (
-  <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Reports
-      </Typography>
-      <Typography variant="body1">
-        View team leave reports and analytics.
-      </Typography>
-    </Box>
-  </Container>
-);
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Profile
+        </Typography>
+        <Paper sx={{ p: 3, mt: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Personal Information
+          </Typography>
+          <Typography variant="body1">
+            <strong>Name:</strong> {user?.name || "N/A"}
+          </Typography>
+          <Typography variant="body1">
+            <strong>Email:</strong> {user?.email || "N/A"}
+          </Typography>
+          <Typography variant="body1">
+            <strong>Role:</strong> Manager
+          </Typography>
+        </Paper>
+      </Box>
+    </Container>
+  );
+};
 
 const ManagerPage = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -69,14 +52,27 @@ const ManagerPage = () => {
       icon: <Dashboard />,
       component: <ManagerDashboard />,
     },
+    {
+      label: "Apply For Leave",
+      icon: <Event />,
+      component: <LeaveApplicationForm />,
+    },
+    {
+      label: "Leave History",
+      icon: <History />,
+      component: <LeaveHistory />,
+    },
+    {
+      label: "Profile",
+      icon: <Person />,
+      component: <Profile />,
+    },
     { label: "Team", icon: <People />, component: <TeamManagement /> },
-    { label: "Approvals", icon: <Assessment />, component: <Approvals /> },
-    { label: "Reports", icon: <Event />, component: <Reports /> },
   ];
 
   return (
     <Navbar
-      title="Smart Leave Management - Manager"
+      title="Smart Leave Management"
       tabs={tabs}
       onTabChange={handleTabChange}
       currentTab={tabValue}

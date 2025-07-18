@@ -11,7 +11,6 @@ import type {
 interface LeaveState {
   leaves: Leave[];
   balances: LeaveBalance[];
-  teamLeaves: Leave[];
   loading: boolean;
   error: string | null;
   pagination: {
@@ -26,7 +25,6 @@ interface LeaveState {
 const initialState: LeaveState = {
   leaves: [],
   balances: [],
-  teamLeaves: [],
   loading: false,
   error: null,
   pagination: {
@@ -40,8 +38,24 @@ const initialState: LeaveState = {
 // Async thunks
 export const fetchLeaves = createAsyncThunk(
   "leaves/fetchLeaves",
-  async ({ page = 1, limit = 10 }: { page?: number; limit?: number }) => {
-    const response = await leaveService.getLeaves(page, limit);
+  async ({
+    page,
+    limit,
+    year,
+  }: { page?: number; limit?: number; year?: number } = {}) => {
+    const response = await leaveService.getLeaves(page, limit, year);
+    return response.data;
+  }
+);
+
+export const fetchAllLeaves = createAsyncThunk(
+  "leaves/fetchAllLeaves",
+  async ({
+    page,
+    limit,
+    year,
+  }: { page?: number; limit?: number; year?: number } = {}) => {
+    const response = await leaveService.getAllLeaves(page, limit, year);
     return response.data;
   }
 );
@@ -50,14 +64,6 @@ export const fetchLeaveBalances = createAsyncThunk(
   "leaves/fetchLeaveBalances",
   async () => {
     const response = await leaveService.getLeaveBalances();
-    return response.data;
-  }
-);
-
-export const fetchTeamLeaves = createAsyncThunk(
-  "leaves/fetchTeamLeaves",
-  async () => {
-    const response = await leaveService.getTeamLeaves();
     return response.data;
   }
 );
@@ -74,7 +80,7 @@ export const cancelLeave = createAsyncThunk(
   "leaves/cancelLeave",
   async (leaveId: number) => {
     const response = await leaveService.cancelLeave(leaveId);
-    return { leaveId, message: response.data.message };
+    return { leaveId, message: response.message };
   }
 );
 
@@ -126,6 +132,20 @@ const leaveSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Failed to fetch leaves";
       })
+      // Fetch all leaves (admin only)
+      .addCase(fetchAllLeaves.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllLeaves.fulfilled, (state, action) => {
+        state.loading = false;
+        state.leaves = action.payload.leaves;
+        state.pagination = action.payload.pagination;
+      })
+      .addCase(fetchAllLeaves.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch all leaves";
+      })
       // Fetch leave balances
       .addCase(fetchLeaveBalances.pending, (state) => {
         state.loading = true;
@@ -137,18 +157,6 @@ const leaveSlice = createSlice({
       .addCase(fetchLeaveBalances.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch leave balances";
-      })
-      // Fetch team leaves
-      .addCase(fetchTeamLeaves.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(fetchTeamLeaves.fulfilled, (state, action) => {
-        state.loading = false;
-        state.teamLeaves = action.payload.leaves;
-      })
-      .addCase(fetchTeamLeaves.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || "Failed to fetch team leaves";
       })
       // Create leave
       .addCase(createLeave.pending, (state) => {
@@ -194,14 +202,6 @@ const leaveSlice = createSlice({
         );
         if (leaveIndex !== -1) {
           state.leaves[leaveIndex] = updatedLeave;
-        }
-
-        // Update in team leaves array
-        const teamLeaveIndex = state.teamLeaves.findIndex(
-          (leave) => leave.id === updatedLeave.id
-        );
-        if (teamLeaveIndex !== -1) {
-          state.teamLeaves[teamLeaveIndex] = updatedLeave;
         }
       })
       .addCase(approveLeave.rejected, (state, action) => {

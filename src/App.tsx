@@ -10,14 +10,33 @@ import { CssBaseline } from "@mui/material";
 import { Toaster } from "react-hot-toast";
 import { store } from "./store";
 import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import AdminPage from "./pages/AdminPage";
-import ManagerPage from "./pages/ManagerPage";
-import EmployeePage from "./pages/EmployeePage";
+
+import EmployeeDashboard from "./components/employee/EmployeeDashboard";
+import EmployeeApplyLeave from "./components/employee/EmployeeApplyLeave";
+import EmployeeHistory from "./components/employee/EmployeeHistory";
+import EmployeeProfile from "./components/employee/EmployeeProfile";
 import NotFoundPage from "./pages/NotFoundPage";
 import ProtectedRoute from "./components/common/ProtectedRoute";
-import RoleBasedRedirect from "./components/common/RoleBasedRedirect";
+import UserDetailPage from "./components/manager/UserDetailPage";
+import AdminManagerDetailPage from "./components/admin/AdminManagerDetailPage";
 import { useAuthError } from "./hooks/useAuthError";
+import RoleBasedRedirect from "./components/common/RoleBasedRedirect";
+
+// Admin route components
+import AdminDashboard from "./components/admin/AdminDashboard";
+import AdminUsers from "./components/admin/AdminUsers";
+import AdminTeam from "./components/admin/AdminTeam";
+import AdminConfig from "./components/admin/AdminConfig";
+import AdminLeaves from "./components/admin/AdminLeaves";
+import AdminAudit from "./components/admin/AdminAudit";
+import AdminReports from "./components/admin/AdminReports";
+
+// Manager route components
+import ManagerDashboard from "./components/manager/ManagerDashboard";
+import ManagerApplyLeave from "./components/manager/ManagerApplyLeave";
+import ManagerHistory from "./components/manager/ManagerHistory";
+import ManagerProfile from "./components/manager/ManagerProfile";
+import ManagerTeam from "./components/manager/ManagerTeam";
 
 // Create theme
 const theme = createTheme({
@@ -114,28 +133,68 @@ const AppRoutes = () => {
 
       {/* Employee routes */}
       <Route
-        path="/dashboard"
+        path="/employee/dashboard"
         element={
           <ProtectedRoute requiredRole="employee">
-            <EmployeePage />
+            <EmployeeDashboard />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/leaves"
+        path="/employee/apply-leave"
         element={
           <ProtectedRoute requiredRole="employee">
-            <EmployeePage />
+            <EmployeeApplyLeave />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employee/history"
+        element={
+          <ProtectedRoute requiredRole="employee">
+            <EmployeeHistory />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employee/profile"
+        element={
+          <ProtectedRoute requiredRole="employee">
+            <EmployeeProfile />
           </ProtectedRoute>
         }
       />
 
       {/* Manager routes */}
       <Route
-        path="/manager"
+        path="/manager/dashboard"
         element={
           <ProtectedRoute requiredRole="manager">
-            <ManagerPage />
+            <ManagerDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/apply-leave"
+        element={
+          <ProtectedRoute requiredRole="manager">
+            <ManagerApplyLeave />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/history"
+        element={
+          <ProtectedRoute requiredRole="manager">
+            <ManagerHistory />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/profile"
+        element={
+          <ProtectedRoute requiredRole="manager">
+            <ManagerProfile />
           </ProtectedRoute>
         }
       />
@@ -143,41 +202,26 @@ const AppRoutes = () => {
         path="/manager/team"
         element={
           <ProtectedRoute requiredRole="manager">
-            <DashboardPage />
+            <ManagerTeam />
           </ProtectedRoute>
         }
       />
+
       <Route
-        path="/manager/approvals"
+        path="/manager/users/:userId"
         element={
           <ProtectedRoute requiredRole="manager">
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/manager/reports"
-        element={
-          <ProtectedRoute requiredRole="manager">
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/manager/settings"
-        element={
-          <ProtectedRoute requiredRole="manager">
-            <DashboardPage />
+            <UserDetailPage />
           </ProtectedRoute>
         }
       />
 
       {/* Admin routes */}
       <Route
-        path="/admin"
+        path="/admin/dashboard"
         element={
           <ProtectedRoute requiredRole="admin">
-            <AdminPage />
+            <AdminDashboard />
           </ProtectedRoute>
         }
       />
@@ -185,7 +229,15 @@ const AppRoutes = () => {
         path="/admin/users"
         element={
           <ProtectedRoute requiredRole="admin">
-            <DashboardPage />
+            <AdminUsers />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/team"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminTeam />
           </ProtectedRoute>
         }
       />
@@ -193,7 +245,15 @@ const AppRoutes = () => {
         path="/admin/config"
         element={
           <ProtectedRoute requiredRole="admin">
-            <DashboardPage />
+            <AdminConfig />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/leaves"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminLeaves />
           </ProtectedRoute>
         }
       />
@@ -201,7 +261,7 @@ const AppRoutes = () => {
         path="/admin/audit"
         element={
           <ProtectedRoute requiredRole="admin">
-            <DashboardPage />
+            <AdminAudit />
           </ProtectedRoute>
         }
       />
@@ -209,7 +269,23 @@ const AppRoutes = () => {
         path="/admin/reports"
         element={
           <ProtectedRoute requiredRole="admin">
-            <DashboardPage />
+            <AdminReports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/manager/:managerId"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminManagerDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/managers/:managerId"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminManagerDetailPage />
           </ProtectedRoute>
         }
       />

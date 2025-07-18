@@ -63,17 +63,42 @@ export const fetchManagers = createAsyncThunk(
 
 export const createUser = createAsyncThunk(
   "users/createUser",
-  async (userData: CreateUserRequest) => {
-    const response = await userService.createUser(userData);
-    return response.data;
+  async (userData: CreateUserRequest, { rejectWithValue }) => {
+    try {
+      const response = await userService.createUser(userData);
+      return response.data;
+    } catch (error) {
+      // Extract server error message from response
+      const axiosError = error as {
+        response?: { data?: { message?: string } };
+      };
+      const serverMessage = axiosError.response?.data?.message;
+      return rejectWithValue({
+        message: serverMessage || (error as Error).message,
+      });
+    }
   }
 );
 
 export const updateUser = createAsyncThunk(
   "users/updateUser",
-  async ({ id, userData }: { id: number; userData: UpdateUserRequest }) => {
-    const response = await userService.updateUser(id, userData);
-    return response.data;
+  async (
+    { id, userData }: { id: number; userData: UpdateUserRequest },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await userService.updateUser(id, userData);
+      return response.data;
+    } catch (error) {
+      // Extract server error message from response
+      const axiosError = error as {
+        response?: { data?: { message?: string } };
+      };
+      const serverMessage = axiosError.response?.data?.message;
+      return rejectWithValue({
+        message: serverMessage || (error as Error).message,
+      });
+    }
   }
 );
 
@@ -155,7 +180,12 @@ const userSlice = createSlice({
       })
       .addCase(createUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to create user";
+        // Extract server error message from the response
+        const errorMessage =
+          (action.payload as { message?: string })?.message ||
+          action.error.message ||
+          "Failed to create user";
+        state.error = errorMessage;
       })
       // Update user
       .addCase(updateUser.pending, (state) => {
@@ -173,7 +203,11 @@ const userSlice = createSlice({
       })
       .addCase(updateUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to update user";
+        const errorMessage =
+          (action.payload as { message?: string })?.message ||
+          action.error.message ||
+          "Failed to update user";
+        state.error = errorMessage;
       })
       // Delete user
       .addCase(deleteUser.pending, (state) => {

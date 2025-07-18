@@ -211,6 +211,10 @@ const Navbar: React.FC<NavbarProps> = ({
             "& .MuiDrawer-paper": {
               boxSizing: "border-box",
               width: 240,
+              top: "64px", // Position below fixed header
+              height: "calc(100vh - 64px)", // Full height minus header
+              border: "none", // Remove default border
+              boxShadow: "2px 0 8px rgba(0,0,0,0.1)", // Add shadow for better visibility
             },
           }}
         >

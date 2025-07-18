@@ -37,11 +37,6 @@ export interface LeaveApplication {
   reason: string;
 }
 
-export interface LeaveApproval {
-  status: "approved" | "rejected";
-  manager_comment: string;
-}
-
 export interface LeaveState {
   leaves: Leave[];
   balances: LeaveBalance[];

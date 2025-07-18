@@ -88,7 +88,7 @@ export const employeeService = {
   // Get employee dashboard data
   async getDashboardData(): Promise<EmployeeDashboardResponse> {
     const response = await api.get<ApiResponse<EmployeeDashboardResponse>>(
-      "/users/employees/dashboard"
+      "/users/dashboard"
     );
     return response.data.data;
   },

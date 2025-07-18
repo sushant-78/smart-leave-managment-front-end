@@ -15,7 +15,7 @@ export interface Leave {
   manager_comment?: string | null;
   created_at: string;
   updated_at: string;
-  user: User;
+  employee: User;
   manager?: User;
 }
 
@@ -30,10 +30,6 @@ export interface LeaveBalance {
 export interface LeavesResponse {
   leaves: Leave[];
   pagination: Pagination;
-}
-
-export interface TeamLeavesResponse {
-  leaves: Leave[];
 }
 
 export interface LeaveBalancesResponse {
@@ -52,13 +48,44 @@ export interface ApproveLeaveRequest {
   manager_comment: string;
 }
 
+export interface ManagerLeave extends Omit<Leave, "user"> {
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+export interface ManagerLeavesResponse {
+  leaves: ManagerLeave[];
+}
+
 // Leave management service
 export const leaveService = {
   // Get all leaves (for current user or admin)
-  async getLeaves(page = 1, limit = 10): Promise<ApiResponse<LeavesResponse>> {
-    const response = await api.get<ApiResponse<LeavesResponse>>(
-      `/leaves?page=${page}&limit=${limit}`
-    );
+  async getLeaves(
+    page?: number,
+    limit?: number,
+    year?: number
+  ): Promise<ApiResponse<LeavesResponse>> {
+    let url = "/leaves";
+    const params = new URLSearchParams();
+
+    if (page && limit) {
+      params.append("page", page.toString());
+      params.append("limit", limit.toString());
+    }
+
+    if (year) {
+      params.append("year", year.toString());
+    }
+
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+
+    const response = await api.get<ApiResponse<LeavesResponse>>(url);
     return response.data;
   },
 
@@ -66,14 +93,6 @@ export const leaveService = {
   async getLeaveBalances(): Promise<ApiResponse<LeaveBalancesResponse>> {
     const response = await api.get<ApiResponse<LeaveBalancesResponse>>(
       "/leaves/balance"
-    );
-    return response.data;
-  },
-
-  // Get team leaves (for managers)
-  async getTeamLeaves(): Promise<ApiResponse<TeamLeavesResponse>> {
-    const response = await api.get<ApiResponse<TeamLeavesResponse>>(
-      "/leaves/team"
     );
     return response.data;
   },
@@ -114,6 +133,40 @@ export const leaveService = {
       `/leaves/${id}/approve`,
       approvalData
     );
+    return response.data;
+  },
+
+  // Get all leave requests for assigned users (for managers)
+  async getManagerLeaves(): Promise<ApiResponse<ManagerLeavesResponse>> {
+    const response = await api.get<ApiResponse<ManagerLeavesResponse>>(
+      "/managers/leaves"
+    );
+    return response.data;
+  },
+
+  // Get all leaves (admin only)
+  async getAllLeaves(
+    page?: number,
+    limit?: number,
+    year?: number
+  ): Promise<ApiResponse<LeavesResponse>> {
+    let url = "/leaves/all";
+    const params = new URLSearchParams();
+
+    if (page && limit) {
+      params.append("page", page.toString());
+      params.append("limit", limit.toString());
+    }
+
+    if (year) {
+      params.append("year", year.toString());
+    }
+
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+
+    const response = await api.get<ApiResponse<LeavesResponse>>(url);
     return response.data;
   },
 };

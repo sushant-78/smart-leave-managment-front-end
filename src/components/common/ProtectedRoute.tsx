@@ -24,6 +24,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   };
 
   useEffect(() => {
+    // Only fetch user data if we're authenticated but don't have user data
+    // This prevents unnecessary API calls when user data is already available from login
     if (isAuthenticated && !user) {
       dispatch(getCurrentUser());
     }
@@ -62,11 +64,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       // Redirect to appropriate dashboard based on user's role
       switch (user.role) {
         case "admin":
-          return <Navigate to="/admin" replace />;
+          return <Navigate to="/admin/dashboard" replace />;
         case "manager":
-          return <Navigate to="/manager" replace />;
+          return <Navigate to="/manager/dashboard" replace />;
         case "employee":
-          return <Navigate to="/dashboard" replace />;
+          return <Navigate to="/employee/dashboard" replace />;
         default:
           // Invalid role - redirect to 404
           return <Navigate to="/404" replace />;

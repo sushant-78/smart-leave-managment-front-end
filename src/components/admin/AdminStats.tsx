@@ -2,12 +2,12 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
-  Grid,
   Card,
   CardContent,
   Typography,
   CircularProgress,
   Paper,
+  Container,
 } from "@mui/material";
 import { People, Event, Pending, Warning } from "@mui/icons-material";
 import type { RootState, AppDispatch } from "../../store";
@@ -106,42 +106,57 @@ const AdminStats = () => {
 
   if (error) {
     return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Admin Dashboard
+          </Typography>
+
+          <Paper sx={{ p: 4, textAlign: "center" }}>
+            <Typography variant="h6" color="textSecondary" gutterBottom>
+              Something went wrong while fetching data
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Unable to load dashboard statistics at this time.
+            </Typography>
+          </Paper>
+        </Box>
+      </Container>
+    );
+  }
+
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box>
         <Typography variant="h4" component="h1" gutterBottom>
           Admin Dashboard
         </Typography>
 
-        <Paper sx={{ p: 4, textAlign: "center" }}>
-          <Typography variant="h6" color="textSecondary" gutterBottom>
-            Something went wrong while fetching data
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Unable to load dashboard statistics at this time.
-          </Typography>
-        </Paper>
-      </Box>
-    );
-  }
-
-  return (
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Admin Dashboard
-      </Typography>
-
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        {/* Stats Cards */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, 1fr)",
+              md: "repeat(4, 1fr)",
+            },
+            gap: 3,
+            mb: 4,
+          }}
+        >
           <StatCard
             title="Total Users"
-            value={dashboardStats?.users.total || 0}
+            value={
+              dashboardStats
+                ? dashboardStats.users.employees + dashboardStats.users.managers
+                : 0
+            }
             icon={<People />}
             color="primary.main"
             loading={loading}
           />
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Leaves"
             value={dashboardStats?.leaves.total || 0}
@@ -149,9 +164,7 @@ const AdminStats = () => {
             color="success.main"
             loading={loading}
           />
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Pending Approvals"
             value={dashboardStats?.leaves.pending || 0}
@@ -159,9 +172,7 @@ const AdminStats = () => {
             color="warning.main"
             loading={loading}
           />
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Unassigned Users"
             value={dashboardStats?.users.unassigned || 0}
@@ -169,9 +180,9 @@ const AdminStats = () => {
             color="error.main"
             loading={loading}
           />
-        </Grid>
-      </Grid>
-    </Box>
+        </Box>
+      </Box>
+    </Container>
   );
 };
 

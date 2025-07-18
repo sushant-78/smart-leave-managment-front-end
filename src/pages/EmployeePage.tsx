@@ -5,32 +5,8 @@ import { useSelector } from "react-redux";
 import type { RootState } from "../store";
 import Navbar from "../components/common/Navbar";
 import EmployeeDashboard from "../components/employee/EmployeeDashboard";
-
-const ApplyLeave = () => (
-  <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Apply for Leave
-      </Typography>
-      <Typography variant="body1">
-        Submit new leave requests and view your leave balance.
-      </Typography>
-    </Box>
-  </Container>
-);
-
-const LeaveHistory = () => (
-  <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Leave History
-      </Typography>
-      <Typography variant="body1">
-        View your past leave requests and their status.
-      </Typography>
-    </Box>
-  </Container>
-);
+import LeaveApplicationForm from "../components/leaves/LeaveApplicationForm";
+import LeaveHistory from "../components/leaves/LeaveHistory";
 
 const Profile = () => {
   const { user } = useSelector((state: RootState) => state.auth) as {
@@ -106,8 +82,12 @@ const EmployeePage = () => {
       icon: <Dashboard />,
       component: <EmployeeDashboard />,
     },
-    { label: "Apply Leave", icon: <Event />, component: <ApplyLeave /> },
-    { label: "History", icon: <History />, component: <LeaveHistory /> },
+    {
+      label: "Apply For Leave",
+      icon: <Event />,
+      component: <LeaveApplicationForm />,
+    },
+    { label: "Leave History", icon: <History />, component: <LeaveHistory /> },
     { label: "Profile", icon: <Person />, component: <Profile /> },
   ];
 

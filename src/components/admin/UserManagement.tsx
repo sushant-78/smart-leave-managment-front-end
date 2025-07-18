@@ -25,6 +25,7 @@ import {
   MenuItem,
   Alert,
   InputAdornment,
+  Container,
 } from "@mui/material";
 import {
   Add,
@@ -97,6 +98,12 @@ const UserManagement = () => {
     error: string | null;
   };
 
+  const { user: currentUser } = useSelector(
+    (state: RootState) => state.auth
+  ) as {
+    user: User | null;
+  };
+
   // Form and dialog states
   const [openDialog, setOpenDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -163,7 +170,7 @@ const UserManagement = () => {
             name: formData.name,
             role: formData.role,
             manager_id:
-              formData.role === "employee" ? formData.manager_id : undefined,
+              formData.role === "employee" ? formData.manager_id || null : null,
           },
         };
         console.log("Update user payload:", updatePayload);
@@ -171,26 +178,28 @@ const UserManagement = () => {
         showToast.success("User updated successfully!");
       } else {
         // Create user - email will be the password
-        await dispatch(
-          createUser({
-            name: formData.name,
-            email: formData.email,
-            password: formData.email, // Email is the password
-            role: formData.role,
-            manager_id:
-              formData.role === "employee" ? formData.manager_id : undefined,
-          })
-        ).unwrap();
+        const createPayload = {
+          name: formData.name,
+          email: formData.email,
+          password: formData.email, // Email is the password
+          role: formData.role,
+          manager_id:
+            formData.role === "employee" ? formData.manager_id || null : null, // Managers should have null manager_id
+        };
+
+        console.log("Create user payload:", createPayload);
+        await dispatch(createUser(createPayload)).unwrap();
         showToast.success(
           "User created successfully! Email is set as the password."
         );
+
+        // Refresh managers list after creating a user
+        dispatch(fetchManagers());
       }
       handleCloseDialog();
     } catch (error) {
       console.error("User operation failed:", error);
-      showToast.error(
-        editingUser ? "Failed to update user" : "Failed to create user"
-      );
+      // The error will be handled by the Redux slice and displayed via useEffect
     }
   };
 
@@ -207,8 +216,9 @@ const UserManagement = () => {
       showToast.success("User deleted successfully!");
       setDeleteDialog(false);
       setUserToDelete(null);
-    } catch {
-      showToast.error("Failed to delete user");
+    } catch (error) {
+      console.error("Delete user failed:", error);
+      // The error will be handled by the Redux slice and displayed via useEffect
     }
   };
 
@@ -227,6 +237,11 @@ const UserManagement = () => {
 
   // Filter users based on search and filters
   const filteredUsers = users.filter((user: User) => {
+    // Exclude current admin user from the list
+    if (currentUser && user.id === currentUser.id) {
+      return false;
+    }
+
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -252,262 +267,271 @@ const UserManagement = () => {
   };
 
   return (
-    <Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h4" component="h1">
-          User Management
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => handleOpenDialog()}
-        >
-          Add User
-        </Button>
-      </Box>
-
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box>
         <Box
           sx={{
             display: "flex",
-            gap: 2,
+            justifyContent: "space-between",
             alignItems: "center",
-            flexWrap: "wrap",
+            mb: 3,
           }}
         >
-          <TextField
-            size="small"
-            placeholder="Search by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ minWidth: 250 }}
-          />
-
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Role</InputLabel>
-            <Select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              label="Role"
-            >
-              <MenuItem value="all">All Roles</MenuItem>
-              <MenuItem value="employee">Employee</MenuItem>
-              <MenuItem value="manager">Manager</MenuItem>
-            </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>User Status</InputLabel>
-            <Select
-              value={userStatusFilter}
-              onChange={(e) => setUserStatusFilter(e.target.value)}
-              label="User Status"
-            >
-              <MenuItem value="all">All Users</MenuItem>
-              <MenuItem value="assigned">Assigned</MenuItem>
-              <MenuItem value="unassigned">Unassigned</MenuItem>
-            </Select>
-          </FormControl>
-
+          <Typography variant="h4" component="h1">
+            User Management
+          </Typography>
           <Button
-            variant="outlined"
-            startIcon={<FilterList />}
-            onClick={() => {
-              setSearchTerm("");
-              setRoleFilter("all");
-              setUserStatusFilter("all");
-            }}
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => handleOpenDialog()}
           >
-            Clear Filters
+            Add User
           </Button>
         </Box>
-      </Paper>
 
-      {/* User Table */}
-      <Paper sx={{ width: "100%", overflow: "hidden" }}>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Manager</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
+        {/* Filters */}
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <TextField
+              size="small"
+              placeholder="Search by name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ minWidth: 250 }}
+            />
+
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                label="Role"
+              >
+                <MenuItem value="all">All Roles</MenuItem>
+                <MenuItem value="employee">Employee</MenuItem>
+                <MenuItem value="manager">Manager</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>User Status</InputLabel>
+              <Select
+                value={userStatusFilter}
+                onChange={(e) => setUserStatusFilter(e.target.value)}
+                label="User Status"
+              >
+                <MenuItem value="all">All Users</MenuItem>
+                <MenuItem value="assigned">Assigned</MenuItem>
+                <MenuItem value="unassigned">Unassigned</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Button
+              variant="outlined"
+              startIcon={<FilterList />}
+              onClick={() => {
+                setSearchTerm("");
+                setRoleFilter("all");
+                setUserStatusFilter("all");
+              }}
+            >
+              Clear Filters
+            </Button>
+          </Box>
+        </Paper>
+
+        {/* User Table */}
+        <Paper sx={{ width: "100%", overflow: "hidden" }}>
+          <TableContainer>
+            <Table>
+              <TableHead>
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    <CircularProgress />
-                  </TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Role</TableCell>
+                  <TableCell>Manager</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
-              ) : filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Chip
-                        icon={getRoleIcon(user.role)}
-                        label={user.role}
-                        color={getRoleColor(user.role)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>{getManagerName(user.manager_id)}</TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(user)}
-                      >
-                        <Edit />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeleteClick(user)}
-                      >
-                        <Delete />
-                      </IconButton>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      <CircularProgress />
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    <Typography variant="body2" color="textSecondary">
-                      No users found
-                    </Typography>
-                  </TableCell>
-                </TableRow>
+                ) : filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={getRoleIcon(user.role)}
+                          label={user.role}
+                          color={getRoleColor(user.role)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>{getManagerName(user.manager_id)}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenDialog(user)}
+                        >
+                          <Edit />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteClick(user)}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      <Typography variant="body2" color="textSecondary">
+                        No users found
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+
+        {/* Add/Edit User Dialog */}
+        <Dialog
+          open={openDialog}
+          onClose={handleCloseDialog}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            {editingUser ? "Edit User" : "Add New User"}
+          </DialogTitle>
+          <form onSubmit={handleSubmit}>
+            <DialogContent>
+              {!editingUser && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <strong>Note:</strong> The email address will be set as the
+                  initial password for the new user.
+                </Alert>
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
 
-      {/* Add/Edit User Dialog */}
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>{editingUser ? "Edit User" : "Add New User"}</DialogTitle>
-        <form onSubmit={handleSubmit}>
-          <DialogContent>
-            {!editingUser && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <strong>Note:</strong> The email address will be set as the
-                initial password for the new user.
-              </Alert>
-            )}
-
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <TextField
-                fullWidth
-                label="Name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required
-              />
-
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                required
-                disabled={!!editingUser}
-                helperText={editingUser ? "Email cannot be changed" : ""}
-              />
-
-              <FormControl fullWidth>
-                <InputLabel>Role</InputLabel>
-                <Select
-                  value={formData.role}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Name"
+                  value={formData.name}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      role: e.target.value as "employee" | "manager",
-                      manager_id:
-                        e.target.value === "manager"
-                          ? undefined
-                          : formData.manager_id,
-                    })
+                    setFormData({ ...formData, name: e.target.value })
                   }
-                  label="Role"
-                >
-                  <MenuItem value="employee">Employee</MenuItem>
-                  <MenuItem value="manager">Manager</MenuItem>
-                </Select>
-              </FormControl>
+                  required
+                />
 
-              {formData.role === "employee" && (
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  required
+                  disabled={!!editingUser}
+                  helperText={editingUser ? "Email cannot be changed" : ""}
+                />
+
                 <FormControl fullWidth>
-                  <InputLabel>Manager</InputLabel>
+                  <InputLabel>Role</InputLabel>
                   <Select
-                    value={formData.manager_id || ""}
+                    value={formData.role}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        manager_id: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
+                        role: e.target.value as "employee" | "manager",
+                        manager_id:
+                          e.target.value === "manager"
+                            ? undefined
+                            : formData.manager_id,
                       })
                     }
-                    label="Manager"
+                    label="Role"
                   >
-                    <MenuItem value="">No Manager (Unassigned)</MenuItem>
-                    {managers.map((manager: User) => (
-                      <MenuItem key={manager.id} value={manager.id}>
-                        {manager.name}
-                      </MenuItem>
-                    ))}
+                    <MenuItem value="employee">Employee</MenuItem>
+                    <MenuItem value="manager">Manager</MenuItem>
                   </Select>
                 </FormControl>
-              )}
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button type="submit" variant="contained">
-              {editingUser ? "Update" : "Create"}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        open={deleteDialog}
-        user={userToDelete}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-      />
-    </Box>
+                {formData.role === "employee" && (
+                  <FormControl fullWidth>
+                    <InputLabel>Manager</InputLabel>
+                    <Select
+                      value={formData.manager_id || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          manager_id: e.target.value
+                            ? Number(e.target.value)
+                            : undefined,
+                        })
+                      }
+                      label="Manager"
+                    >
+                      <MenuItem value="">No Manager (Unassigned)</MenuItem>
+                      {managers
+                        .filter(
+                          (manager: User) =>
+                            !editingUser || manager.id !== editingUser.id
+                        )
+                        .map((manager: User) => (
+                          <MenuItem key={manager.id} value={manager.id}>
+                            {manager.name}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                  </FormControl>
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDialog}>Cancel</Button>
+              <Button type="submit" variant="contained">
+                {editingUser ? "Update" : "Create"}
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <DeleteConfirmDialog
+          open={deleteDialog}
+          user={userToDelete}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+        />
+      </Box>
+    </Container>
   );
 };
 

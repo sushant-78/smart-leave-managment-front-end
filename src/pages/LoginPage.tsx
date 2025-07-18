@@ -67,11 +67,11 @@ const LoginPage = () => {
     else if (isAuthenticated && user) {
       // Redirect based on user role
       if (user.role === "admin") {
-        navigate("/admin");
+        navigate("/admin/dashboard");
       } else if (user.role === "manager") {
-        navigate("/manager");
+        navigate("/manager/dashboard");
       } else {
-        navigate("/dashboard");
+        navigate("/employee/dashboard");
       }
     }
   }, [isAuthenticated, user, navigate, dispatch]);
