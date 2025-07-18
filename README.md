@@ -1,167 +1,164 @@
-# Smart Leave Management System - Frontend
+# Smart Leave Management System
 
-A modern React-based frontend for the Smart Leave Management System with role-based access control, comprehensive leave management, and admin features.
+## Overview
 
-## 🚀 Tech Stack
+The Smart Leave Management System is a comprehensive web-based application designed to streamline and automate employee leave management processes within organizations. Built with modern web technologies, this system provides a user-friendly interface for employees, managers, and administrators to handle leave requests efficiently while maintaining proper approval workflows and compliance.
 
-- **Framework**: React 18 with TypeScript
-- **State Management**: Redux Toolkit with Thunk
-- **UI Library**: MUI v5 (Material-UI)
-- **Routing**: React Router v6 with protected routes
-- **HTTP Client**: Axios with interceptors
-- **Form Handling**: React Hook Form with Yup validation
-- **Date Handling**: Day.js
-- **Build Tool**: Vite
+## 🎯 Business Value
 
-## 📁 Project Structure
+### For Organizations
+
+- **Streamlined Processes**: Automate leave request workflows, reducing manual paperwork and administrative overhead
+- **Improved Compliance**: Ensure leave policies are consistently applied across the organization
+- **Better Resource Planning**: Real-time visibility into team availability and leave patterns
+- **Enhanced Employee Experience**: Self-service portal for leave applications and tracking
+- **Audit Trail**: Complete tracking of all leave-related activities for compliance and reporting
+
+### For Employees
+
+- **Easy Leave Applications**: Simple, intuitive interface for submitting leave requests
+- **Real-time Status Tracking**: Monitor the status of leave applications in real-time
+- **Leave Balance Visibility**: Clear view of available leave balances by type
+- **Historical Records**: Access to complete leave history and patterns
+
+### For Managers
+
+- **Team Overview**: Comprehensive view of team members' leave status and balances
+- **Efficient Approvals**: Streamlined approval process with all necessary information at hand
+- **Resource Planning**: Calendar view of team leave to plan work assignments
+- **Performance Insights**: Analytics on team leave patterns and trends
+
+## 🚀 Key Features
+
+### Multi-Role Access Control
+
+- **Employee Portal**: Apply for leave, view balances, track history
+- **Manager Dashboard**: Approve requests, manage team, view team calendar
+- **Admin Panel**: System configuration, user management, audit logs
+
+### Leave Management
+
+- **Multiple Leave Types**: Casual, Sick, and Earned leave support
+- **Smart Date Selection**: Automatic weekend and holiday exclusion
+- **Balance Validation**: Real-time checking against available leave balances
+- **Overlap Prevention**: Automatic detection of conflicting leave dates
+
+### Advanced Features
+
+- **Working Days Configuration**: Flexible setup for different working week patterns (5/6/4 days)
+- **Holiday Calendar**: Configurable holiday management
+- **Leave Type Management**: Customizable leave types and policies
+- **Audit Logging**: Complete activity tracking for compliance
+
+### User Experience
+
+- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
+- **Real-time Notifications**: Toast notifications for all user actions
+- **Intuitive Navigation**: Role-based navigation with clear visual hierarchy
+- **Data Visualization**: Charts and graphs for better data understanding
+
+## 🛠 Technical Architecture
+
+### Frontend Technology Stack
+
+- **React 18**: Modern React with hooks and functional components
+- **TypeScript**: Type-safe development for better code quality
+- **Material-UI (MUI)**: Professional UI components and theming
+- **Redux Toolkit**: State management with RTK Query for API calls
+- **React Router**: Client-side routing with protected routes
+- **Vite**: Fast build tool and development server
+
+### Key Technical Features
+
+- **Type Safety**: Full TypeScript implementation for better development experience
+- **State Management**: Centralized state management with Redux Toolkit
+- **Protected Routes**: Role-based access control for all application routes
+- **Error Handling**: Comprehensive error handling with user-friendly messages
+- **Responsive Design**: Mobile-first approach with Material-UI breakpoints
+- **Performance Optimized**: Code splitting, lazy loading, and efficient rendering
+
+### Code Organization
 
 ```
 src/
-├── components/
-│   ├── common/          # Shared components (ProtectedRoute, Layout, etc.)
-│   ├── auth/            # Authentication components
-│   ├── dashboard/       # Dashboard components
-│   ├── leaves/          # Leave management components
-│   ├── admin/           # Admin-specific components
-│   └── manager/         # Manager-specific components
-├── pages/               # Page components
-├── store/               # Redux store and slices
-├── services/            # API services
-├── types/               # TypeScript type definitions
-├── utils/               # Utility functions and constants
-└── hooks/               # Custom React hooks
+├── components/          # React components organized by role
+│   ├── admin/          # Admin-specific components
+│   ├── employee/       # Employee-specific components
+│   ├── manager/        # Manager-specific components
+│   ├── common/         # Shared components (Layout, Navbar, etc.)
+│   └── leaves/         # Leave-related components
+├── pages/              # Page-level components
+├── services/           # API service layer
+├── store/              # Redux store and slices
+├── types/              # TypeScript type definitions
+├── utils/              # Utility functions
+└── hooks/              # Custom React hooks
 ```
 
-## 🛠️ Setup Instructions
+## 📊 System Roles & Permissions
+
+### Employee
+
+- View personal dashboard with leave balances
+- Apply for leave with date selection and reason
+- Track leave application status
+- View leave history and patterns
+- Access personal profile information
+
+### Manager
+
+- All employee permissions
+- Approve/reject leave requests from team members
+- View team leave calendar and availability
+- Access team member details and leave history
+- Manage team leave patterns and trends
+
+### Administrator
+
+- All manager permissions
+- System configuration (working days, holidays, leave types)
+- User management (create, update, delete users)
+- Audit log access and system monitoring
+- Dashboard analytics and reporting
+
+## 🔧 Installation & Setup
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- npm or yarn
+- Node.js (v16 or higher)
+- npm or yarn package manager
 
-### Installation
+### Quick Start
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+# Clone the repository
+git clone <repository-url>
+cd smart-leave-management-system
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
 
 ### Environment Configuration
 
 Create a `.env` file in the root directory:
 
 ```env
-VITE_API_BASE_URL=http://localhost:3001/api
-VITE_APP_NAME=Smart Leave Management
+VITE_API_BASE_URL=http://localhost:5000/api
 ```
-
-### Development
-
-```bash
-npm run dev
-```
-
-### Build
-
-```bash
-npm run build
-```
-
-## 🔐 Authentication & Authorization
-
-The application implements role-based access control with three user roles:
-
-- **Employee**: Can apply for leaves, view own history and balances
-- **Manager**: Employee capabilities + team management and approval
-- **Admin**: Full system access including user management and configuration
-
-### Protected Routes
-
-- `/dashboard` - All authenticated users
-- `/leaves` - All authenticated users
-- `/admin` - Admin only
-- `/manager` - Manager and Admin
-
-## 📊 Features Implemented
-
-### ✅ Completed
-
-- [x] Project structure and setup
-- [x] Redux store configuration with slices
-- [x] Authentication system with JWT
-- [x] Protected routes with role-based access
-- [x] Login page with form validation
-- [x] Basic dashboard with user information
-- [x] MUI v5 theme setup
-- [x] API service configuration with interceptors
-
-### 🚧 In Progress
-
-- [ ] Leave application form
-- [ ] Leave history and balance display
-- [ ] Manager approval interface
-- [ ] Admin user management
-- [ ] System configuration
-- [ ] Audit logs viewer
-
-## 🔧 Development Status
-
-**Phase 1: Foundation Setup** ✅ COMPLETED
-
-- Project initialization with Vite + React + TypeScript
-- Redux Toolkit setup with store configuration
-- MUI v5 theme setup and customization
-- React Router setup with protected routes
-- Axios configuration with interceptors
-- Basic authentication flow (login/logout)
-- Role-based route protection
-- Error handling and loading states
-
-**Next Phase: Core Features** 🚧 IN PROGRESS
-
-- Leave application form with calendar integration
-- Leave history with filtering and pagination
-- Leave balance display and tracking
-- Employee dashboard with quick actions
-- Manager team view and approval interface
 
 ## 🚀 Deployment
 
-### Vercel Deployment
-
-1. Connect your GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
-
-### Environment Variables for Production
-
-```env
-VITE_API_BASE_URL=https://your-backend-url.com/api
-VITE_APP_NAME=Smart Leave Management
-```
-
-## 📝 API Integration
-
-The frontend is designed to work with the Smart Leave Management System backend API. Key endpoints:
-
-- `POST /auth/login` - User authentication
-- `GET /auth/me` - Get current user info
-- `GET /leaves` - Fetch user leaves
-- `POST /leaves` - Apply for leave
-- `GET /leaves/balance` - Get leave balances
-- `GET /users` - Admin: fetch all users
-- `GET /admin/dashboard` - Admin: dashboard stats
-- `GET /audit` - Admin: audit logs
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+- **Vercel**: easy deployment
 
 ## 📄 License
 
-This project is part of the Smart Leave Management System assignment.
+## This project is licensed under the MIT License - see the LICENSE file for details.
+
+**Built with ❤️ using React, TypeScript, and Material-UI**
