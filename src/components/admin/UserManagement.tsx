@@ -13,7 +13,6 @@ import {
   TableRow,
   IconButton,
   Chip,
-  Alert,
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -24,6 +23,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Alert,
+  InputAdornment,
 } from "@mui/material";
 import {
   Add,
@@ -31,59 +32,99 @@ import {
   Delete,
   Person,
   SupervisorAccount,
+  Search,
+  FilterList,
 } from "@mui/icons-material";
 import type { RootState, AppDispatch } from "../../store";
 import {
   fetchUsers,
+  fetchManagers,
   createUser,
   updateUser,
   deleteUser,
 } from "../../store/userSlice";
 import type { User } from "../../services/authService";
+import { showToast } from "../../utils/toast";
 
 interface UserFormData {
   name: string;
   email: string;
-  password: string;
   role: "employee" | "manager";
   manager_id?: number;
 }
 
+interface DeleteConfirmDialogProps {
+  open: boolean;
+  user: User | null;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+const DeleteConfirmDialog = ({
+  open,
+  user,
+  onClose,
+  onConfirm,
+}: DeleteConfirmDialogProps) => (
+  <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <DialogTitle>Confirm Delete</DialogTitle>
+    <DialogContent>
+      <Typography>
+        Are you sure you want to delete user <strong>{user?.name}</strong>?
+      </Typography>
+      <Alert severity="warning" sx={{ mt: 2 }}>
+        This action will permanently delete the user and all associated data
+        including leaves, applications, and role assignments.
+      </Alert>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={onClose}>Cancel</Button>
+      <Button onClick={onConfirm} color="error" variant="contained">
+        Delete
+      </Button>
+    </DialogActions>
+  </Dialog>
+);
+
 const UserManagement = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const userState = useSelector((state: RootState) => state.users) as
-    | {
-        users: User[];
-        loading: boolean;
-        error: string | null;
-      }
-    | undefined;
+  const { users, managers, loading, error } = useSelector(
+    (state: RootState) => state.users
+  ) as {
+    users: User[];
+    managers: User[];
+    loading: boolean;
+    error: string | null;
+  };
 
-  // Ensure users is always an array and handle undefined state
-  const users =
-    userState && Array.isArray(userState.users) ? userState.users : [];
-  const loading = userState?.loading || false;
-  const error = userState?.error || null;
-
-  // Debug logging
-  console.log("UserManagement - userState:", userState);
-  console.log("UserManagement - users:", users);
-  console.log("UserManagement - loading:", loading);
-  console.log("UserManagement - error:", error);
-
+  // Form and dialog states
   const [openDialog, setOpenDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+  // Filter and search states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [userStatusFilter, setUserStatusFilter] = useState<string>("all");
+
   const [formData, setFormData] = useState<UserFormData>({
     name: "",
     email: "",
-    password: "",
     role: "employee",
   });
 
   useEffect(() => {
-    console.log("UserManagement - Fetching users...");
-    dispatch(fetchUsers({ page: 1, limit: 10 }));
+    dispatch(fetchUsers({ page: 1, limit: 50 }));
+    dispatch(fetchManagers());
   }, [dispatch]);
+
+  // Handle error state with toast
+  useEffect(() => {
+    if (error) {
+      showToast.error(error);
+    }
+  }, [error]);
 
   const handleOpenDialog = (user?: User) => {
     if (user) {
@@ -91,7 +132,6 @@ const UserManagement = () => {
       setFormData({
         name: user.name,
         email: user.email,
-        password: "",
         role: user.role === "admin" ? "employee" : user.role,
         manager_id: user.manager_id || undefined,
       });
@@ -100,7 +140,6 @@ const UserManagement = () => {
       setFormData({
         name: "",
         email: "",
-        password: "",
         role: "employee",
       });
     }
@@ -112,20 +151,70 @@ const UserManagement = () => {
     setEditingUser(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingUser) {
-      dispatch(updateUser({ id: editingUser.id, userData: formData }));
-    } else {
-      dispatch(createUser(formData));
+
+    try {
+      if (editingUser) {
+        // Update user - only role and manager can be updated
+        const updatePayload = {
+          id: editingUser.id,
+          userData: {
+            name: formData.name,
+            role: formData.role,
+            manager_id:
+              formData.role === "employee" ? formData.manager_id : undefined,
+          },
+        };
+        console.log("Update user payload:", updatePayload);
+        await dispatch(updateUser(updatePayload)).unwrap();
+        showToast.success("User updated successfully!");
+      } else {
+        // Create user - email will be the password
+        await dispatch(
+          createUser({
+            name: formData.name,
+            email: formData.email,
+            password: formData.email, // Email is the password
+            role: formData.role,
+            manager_id:
+              formData.role === "employee" ? formData.manager_id : undefined,
+          })
+        ).unwrap();
+        showToast.success(
+          "User created successfully! Email is set as the password."
+        );
+      }
+      handleCloseDialog();
+    } catch (error) {
+      console.error("User operation failed:", error);
+      showToast.error(
+        editingUser ? "Failed to update user" : "Failed to create user"
+      );
     }
-    handleCloseDialog();
   };
 
-  const handleDeleteUser = (userId: number) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      dispatch(deleteUser(userId));
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+    setDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+
+    try {
+      await dispatch(deleteUser(userToDelete.id)).unwrap();
+      showToast.success("User deleted successfully!");
+      setDeleteDialog(false);
+      setUserToDelete(null);
+    } catch {
+      showToast.error("Failed to delete user");
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog(false);
+    setUserToDelete(null);
   };
 
   const getRoleIcon = (role: string) => {
@@ -136,13 +225,31 @@ const UserManagement = () => {
     return role === "manager" ? "primary" : "default";
   };
 
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        {error}
-      </Alert>
-    );
-  }
+  // Filter users based on search and filters
+  const filteredUsers = users.filter((user: User) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+
+    const matchesUserStatus =
+      userStatusFilter === "all" ||
+      (userStatusFilter === "assigned" &&
+        user.role === "employee" &&
+        user.manager_id) ||
+      (userStatusFilter === "unassigned" &&
+        user.role === "employee" &&
+        !user.manager_id);
+
+    return matchesSearch && matchesRole && matchesUserStatus;
+  });
+
+  const getManagerName = (managerId?: number | null) => {
+    if (!managerId) return "No Manager";
+    const manager = managers.find((m: User) => m.id === managerId);
+    return manager ? manager.name : `Manager ${managerId}`;
+  };
 
   return (
     <Box>
@@ -166,6 +273,71 @@ const UserManagement = () => {
         </Button>
       </Box>
 
+      {/* Filters */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <TextField
+            size="small"
+            placeholder="Search by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 250 }}
+          />
+
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              label="Role"
+            >
+              <MenuItem value="all">All Roles</MenuItem>
+              <MenuItem value="employee">Employee</MenuItem>
+              <MenuItem value="manager">Manager</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>User Status</InputLabel>
+            <Select
+              value={userStatusFilter}
+              onChange={(e) => setUserStatusFilter(e.target.value)}
+              label="User Status"
+            >
+              <MenuItem value="all">All Users</MenuItem>
+              <MenuItem value="assigned">Assigned</MenuItem>
+              <MenuItem value="unassigned">Unassigned</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            startIcon={<FilterList />}
+            onClick={() => {
+              setSearchTerm("");
+              setRoleFilter("all");
+              setUserStatusFilter("all");
+            }}
+          >
+            Clear Filters
+          </Button>
+        </Box>
+      </Paper>
+
       {/* User Table */}
       <Paper sx={{ width: "100%", overflow: "hidden" }}>
         <TableContainer>
@@ -186,8 +358,8 @@ const UserManagement = () => {
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
-              ) : users && users.length > 0 ? (
-                users.map((user) => (
+              ) : filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
@@ -199,11 +371,7 @@ const UserManagement = () => {
                         size="small"
                       />
                     </TableCell>
-                    <TableCell>
-                      {user.manager_id
-                        ? `Manager ${user.manager_id}`
-                        : "No Manager"}
-                    </TableCell>
+                    <TableCell>{getManagerName(user.manager_id)}</TableCell>
                     <TableCell>
                       <IconButton
                         size="small"
@@ -214,7 +382,7 @@ const UserManagement = () => {
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => handleDeleteUser(user.id)}
+                        onClick={() => handleDeleteClick(user)}
                       >
                         <Delete />
                       </IconButton>
@@ -245,6 +413,13 @@ const UserManagement = () => {
         <DialogTitle>{editingUser ? "Edit User" : "Add New User"}</DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent>
+            {!editingUser && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <strong>Note:</strong> The email address will be set as the
+                initial password for the new user.
+              </Alert>
+            )}
+
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <TextField
                 fullWidth
@@ -265,20 +440,8 @@ const UserManagement = () => {
                   setFormData({ ...formData, email: e.target.value })
                 }
                 required
-              />
-
-              <TextField
-                fullWidth
-                label="Password"
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                required={!editingUser}
-                helperText={
-                  editingUser ? "Leave blank to keep current password" : ""
-                }
+                disabled={!!editingUser}
+                helperText={editingUser ? "Email cannot be changed" : ""}
               />
 
               <FormControl fullWidth>
@@ -289,6 +452,10 @@ const UserManagement = () => {
                     setFormData({
                       ...formData,
                       role: e.target.value as "employee" | "manager",
+                      manager_id:
+                        e.target.value === "manager"
+                          ? undefined
+                          : formData.manager_id,
                     })
                   }
                   label="Role"
@@ -306,20 +473,19 @@ const UserManagement = () => {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        manager_id: e.target.value as number,
+                        manager_id: e.target.value
+                          ? Number(e.target.value)
+                          : undefined,
                       })
                     }
                     label="Manager"
                   >
-                    <MenuItem value="">No Manager</MenuItem>
-                    {Array.isArray(users) &&
-                      users
-                        .filter((user: User) => user.role === "manager")
-                        .map((manager: User) => (
-                          <MenuItem key={manager.id} value={manager.id}>
-                            {manager.name}
-                          </MenuItem>
-                        ))}
+                    <MenuItem value="">No Manager (Unassigned)</MenuItem>
+                    {managers.map((manager: User) => (
+                      <MenuItem key={manager.id} value={manager.id}>
+                        {manager.name}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               )}
@@ -333,6 +499,14 @@ const UserManagement = () => {
           </DialogActions>
         </form>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialog}
+        user={userToDelete}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+      />
     </Box>
   );
 };

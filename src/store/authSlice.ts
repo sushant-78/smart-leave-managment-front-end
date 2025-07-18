@@ -58,6 +58,15 @@ const authSlice = createSlice({
     ) => {
       state.role = action.payload;
     },
+    // Synchronous logout for 401 errors
+    logoutSync: (state) => {
+      state.user = null;
+      state.token = null;
+      state.isAuthenticated = false;
+      state.role = null;
+      state.error = null;
+      authService.clearAuthData();
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -114,5 +123,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setRole } = authSlice.actions;
+export const { clearError, setRole, logoutSync } = authSlice.actions;
 export default authSlice.reducer;

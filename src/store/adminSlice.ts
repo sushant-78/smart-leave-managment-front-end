@@ -4,7 +4,9 @@ import type {
   DashboardStats,
   SystemConfig,
   AuditLog,
-  CreateConfigRequest,
+  UpdateHolidaysRequest,
+  UpdateWorkingDaysRequest,
+  UpdateLeaveTypesRequest,
 } from "../services/adminService";
 
 // Admin state interface
@@ -54,18 +56,34 @@ export const fetchCurrentConfig = createAsyncThunk(
   }
 );
 
-export const setSystemConfig = createAsyncThunk(
-  "admin/setSystemConfig",
-  async (configData: CreateConfigRequest) => {
-    const response = await adminService.setConfig(configData);
+export const fetchConfigByYear = createAsyncThunk(
+  "admin/fetchConfigByYear",
+  async (year: number) => {
+    const response = await adminService.getConfigByYear(year);
     return response.data;
   }
 );
 
-export const lockSystemConfig = createAsyncThunk(
-  "admin/lockSystemConfig",
-  async (year: number) => {
-    const response = await adminService.lockConfig(year);
+export const updateHolidays = createAsyncThunk(
+  "admin/updateHolidays",
+  async (holidaysData: UpdateHolidaysRequest) => {
+    const response = await adminService.updateHolidays(holidaysData);
+    return response.data;
+  }
+);
+
+export const updateWorkingDays = createAsyncThunk(
+  "admin/updateWorkingDays",
+  async (workingDaysData: UpdateWorkingDaysRequest) => {
+    const response = await adminService.updateWorkingDays(workingDaysData);
+    return response.data;
+  }
+);
+
+export const updateLeaveTypes = createAsyncThunk(
+  "admin/updateLeaveTypes",
+  async (leaveTypesData: UpdateLeaveTypesRequest) => {
+    const response = await adminService.updateLeaveTypes(leaveTypesData);
     return response.data;
   }
 );
@@ -86,10 +104,15 @@ export const fetchAuditLogs = createAsyncThunk(
   }
 );
 
-export const fetchMyAuditLogs = createAsyncThunk(
-  "admin/fetchMyAuditLogs",
-  async ({ page = 1, limit = 20 }: { page?: number; limit?: number }) => {
-    const response = await adminService.getMyAuditLogs(page, limit);
+export const fetchAuditLogsWithFilters = createAsyncThunk(
+  "admin/fetchAuditLogsWithFilters",
+  async (params: {
+    page?: number;
+    limit?: number;
+    user_id?: number;
+    action_type?: string;
+  }) => {
+    const response = await adminService.getAuditLogsWithFilters(params);
     return response.data;
   }
 );
@@ -110,6 +133,9 @@ const adminSlice = createSlice({
         total: 0,
         pages: 0,
       };
+    },
+    clearSystemConfig: (state) => {
+      state.systemConfig = null;
     },
   },
   extraReducers: (builder) => {
@@ -139,32 +165,56 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Failed to fetch system config";
       })
-      // Set system config
-      .addCase(setSystemConfig.pending, (state) => {
+      // Fetch config by year
+      .addCase(fetchConfigByYear.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
-      .addCase(setSystemConfig.fulfilled, (state, action) => {
+      .addCase(fetchConfigByYear.fulfilled, (state, action) => {
         state.loading = false;
         state.systemConfig = action.payload.config;
       })
-      .addCase(setSystemConfig.rejected, (state, action) => {
+      .addCase(fetchConfigByYear.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to set system config";
+        state.error = action.error.message || "Failed to fetch system config";
       })
-      // Lock system config
-      .addCase(lockSystemConfig.pending, (state) => {
+      // Update holidays
+      .addCase(updateHolidays.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(lockSystemConfig.fulfilled, (state, action) => {
+      .addCase(updateHolidays.fulfilled, (state, action) => {
         state.loading = false;
-        if (state.systemConfig) {
-          state.systemConfig.is_locked = action.payload.config.is_locked;
-        }
+        state.systemConfig = action.payload.config;
       })
-      .addCase(lockSystemConfig.rejected, (state, action) => {
+      .addCase(updateHolidays.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to lock system config";
+        state.error = action.error.message || "Failed to update holidays";
+      })
+      // Update working days
+      .addCase(updateWorkingDays.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateWorkingDays.fulfilled, (state, action) => {
+        state.loading = false;
+        state.systemConfig = action.payload.config;
+      })
+      .addCase(updateWorkingDays.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to update working days";
+      })
+      // Update leave types
+      .addCase(updateLeaveTypes.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateLeaveTypes.fulfilled, (state, action) => {
+        state.loading = false;
+        state.systemConfig = action.payload.config;
+      })
+      .addCase(updateLeaveTypes.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to update leave types";
       })
       // Reset leave balances
       .addCase(resetLeaveBalances.pending, (state) => {
@@ -191,21 +241,23 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Failed to fetch audit logs";
       })
-      // Fetch my audit logs
-      .addCase(fetchMyAuditLogs.pending, (state) => {
+      // Fetch audit logs with filters
+      .addCase(fetchAuditLogsWithFilters.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(fetchMyAuditLogs.fulfilled, (state, action) => {
+      .addCase(fetchAuditLogsWithFilters.fulfilled, (state, action) => {
         state.loading = false;
         state.auditLogs = action.payload.logs;
         state.pagination = action.payload.pagination;
       })
-      .addCase(fetchMyAuditLogs.rejected, (state, action) => {
+      .addCase(fetchAuditLogsWithFilters.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to fetch my audit logs";
+        state.error = action.error.message || "Failed to fetch audit logs";
       });
   },
 });
 
-export const { clearError, clearAuditLogs } = adminSlice.actions;
+export const { clearError, clearAuditLogs, clearSystemConfig } =
+  adminSlice.actions;
 export default adminSlice.reducer;

@@ -11,7 +11,6 @@ import {
   TableHead,
   TableRow,
   Chip,
-  Alert,
   CircularProgress,
   TextField,
   FormControl,
@@ -23,80 +22,50 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  IconButton,
+  Pagination,
 } from "@mui/material";
-import { Visibility, FilterList, Search, Download } from "@mui/icons-material";
+import { Visibility, FilterList, Search } from "@mui/icons-material";
+import { fetchAuditLogsWithFilters } from "../../store/adminSlice";
 import type { RootState, AppDispatch } from "../../store";
-
-interface AuditLog {
-  id: number;
-  user_id: number;
-  user_name: string;
-  action: string;
-  resource: string;
-  resource_id: number;
-  details: string;
-  ip_address: string;
-  user_agent: string;
-  created_at: string;
-}
+import type { AuditLog } from "../../services/adminService";
+import { showToast } from "../../utils/toast";
+import { formatUTCDate } from "../../utils/dateUtils";
 
 const AuditLogs = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.admin) as {
+  const { auditLogs, loading, error, pagination } = useSelector(
+    (state: RootState) => state.admin
+  ) as {
+    auditLogs: AuditLog[];
     loading: boolean;
     error: string | null;
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
   };
 
-  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [filterAction, setFilterAction] = useState<string>("all");
   const [filterResource, setFilterResource] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    // TODO: Load audit logs from API
-    console.log("Loading audit logs...");
-    // Mock data for now
-    setLogs([
-      {
-        id: 1,
-        user_id: 1,
-        user_name: "John Doe",
-        action: "LOGIN",
-        resource: "auth",
-        resource_id: 0,
-        details: "User logged in successfully",
-        ip_address: "192.168.1.100",
-        user_agent: "Mozilla/5.0...",
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        user_id: 2,
-        user_name: "Jane Smith",
-        action: "CREATE",
-        resource: "leave",
-        resource_id: 123,
-        details: "Created new leave request",
-        ip_address: "192.168.1.101",
-        user_agent: "Mozilla/5.0...",
-        created_at: new Date(Date.now() - 3600000).toISOString(),
-      },
-      {
-        id: 3,
-        user_id: 3,
-        user_name: "Admin User",
-        action: "UPDATE",
-        resource: "user",
-        resource_id: 5,
-        details: "Updated user profile",
-        ip_address: "192.168.1.102",
-        user_agent: "Mozilla/5.0...",
-        created_at: new Date(Date.now() - 7200000).toISOString(),
-      },
-    ]);
-  }, []);
+    const filters: {
+      page: number;
+      limit: number;
+      action_type?: string;
+    } = { page: currentPage, limit: 20 };
+
+    if (filterAction !== "all") filters.action_type = filterAction;
+
+    dispatch(fetchAuditLogsWithFilters(filters));
+  }, [dispatch, currentPage, filterAction]);
 
   const handleViewLog = (log: AuditLog) => {
     setSelectedLog(log);
@@ -108,41 +77,111 @@ const AuditLogs = () => {
     setSelectedLog(null);
   };
 
-  const handleExportLogs = () => {
-    // TODO: Implement export functionality
-    console.log("Exporting logs...");
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    page: number
+  ) => {
+    setCurrentPage(page);
   };
 
-  const getActionColor = (action: string) => {
-    switch (action) {
+  const getActionColor = (
+    action: string
+  ): "success" | "warning" | "error" | "default" => {
+    switch (action.toUpperCase()) {
       case "CREATE":
+      case "LOGIN":
         return "success";
       case "UPDATE":
+      case "CONFIG_UPDATED":
         return "warning";
       case "DELETE":
         return "error";
-      case "LOGIN":
-        return "info";
       default:
         return "default";
     }
   };
 
-  const filteredLogs = logs.filter((log) => {
+  const getActionDisplayName = (action: string) => {
+    switch (action.toLowerCase()) {
+      case "config_updated":
+        return "Config Updated";
+      case "login":
+        return "Login";
+      case "logout":
+        return "Logout";
+      case "create":
+        return "Create";
+      case "update":
+        return "Update";
+      case "delete":
+        return "Delete";
+      default:
+        return action;
+    }
+  };
+
+  const getResourceDisplayName = (resource: string) => {
+    switch (resource.toLowerCase()) {
+      case "auth":
+        return "Authentication";
+      case "user":
+        return "User";
+      case "leave":
+        return "Leave";
+      case "admin":
+        return "Admin";
+      default:
+        return resource;
+    }
+  };
+
+  const filteredLogs = auditLogs.filter((log) => {
     const matchesAction = filterAction === "all" || log.action === filterAction;
     const matchesResource =
       filterResource === "all" || log.resource === filterResource;
     const matchesSearch =
-      log.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase());
+      (log.user?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.resource_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.action.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesAction && matchesResource && matchesSearch;
   });
 
+  // Handle error with toast and show fallback UI
+  useEffect(() => {
+    if (error) {
+      showToast.error("Failed to fetch audit logs. Please try again.");
+    }
+  }, [error]);
+
   if (error) {
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        {error}
-      </Alert>
+      <Box>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 3,
+          }}
+        >
+          <Typography variant="h4" component="h1">
+            Audit Logs
+          </Typography>
+        </Box>
+
+        <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
+          Track all system activities and user actions
+        </Typography>
+
+        <Paper sx={{ p: 4, textAlign: "center" }}>
+          <Typography variant="h6" color="textSecondary" gutterBottom>
+            Something went wrong while fetching data
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            Unable to load audit logs at this time.
+          </Typography>
+        </Paper>
+      </Box>
     );
   }
 
@@ -159,13 +198,6 @@ const AuditLogs = () => {
         <Typography variant="h4" component="h1">
           Audit Logs
         </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<Download />}
-          onClick={handleExportLogs}
-        >
-          Export Logs
-        </Button>
       </Box>
 
       <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
@@ -203,10 +235,12 @@ const AuditLogs = () => {
               label="Action"
             >
               <MenuItem value="all">All Actions</MenuItem>
-              <MenuItem value="CREATE">Create</MenuItem>
-              <MenuItem value="UPDATE">Update</MenuItem>
-              <MenuItem value="DELETE">Delete</MenuItem>
-              <MenuItem value="LOGIN">Login</MenuItem>
+              <MenuItem value="config_updated">Config Updated</MenuItem>
+              <MenuItem value="login">Login</MenuItem>
+              <MenuItem value="logout">Logout</MenuItem>
+              <MenuItem value="create">Create</MenuItem>
+              <MenuItem value="update">Update</MenuItem>
+              <MenuItem value="delete">Delete</MenuItem>
             </Select>
           </FormControl>
 
@@ -222,6 +256,7 @@ const AuditLogs = () => {
               <MenuItem value="user">User</MenuItem>
               <MenuItem value="leave">Leave</MenuItem>
               <MenuItem value="admin">Admin</MenuItem>
+              <MenuItem value="config">Config</MenuItem>
             </Select>
           </FormControl>
 
@@ -249,7 +284,6 @@ const AuditLogs = () => {
                 <TableCell>Action</TableCell>
                 <TableCell>Resource</TableCell>
                 <TableCell>Details</TableCell>
-                <TableCell>IP Address</TableCell>
                 <TableCell>Timestamp</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
@@ -257,31 +291,40 @@ const AuditLogs = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell colSpan={6} align="center">
                     <CircularProgress />
+                  </TableCell>
+                </TableRow>
+              ) : filteredLogs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    <Typography variant="body2" color="textSecondary">
+                      No audit logs found
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredLogs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell>{log.user_name}</TableCell>
+                    <TableCell>
+                      {log.user?.name || `User ID: ${log.created_by}`}
+                    </TableCell>
                     <TableCell>
                       <Chip
-                        label={log.action}
-                        color={getActionColor(log.action) as any}
+                        label={getActionDisplayName(log.action)}
+                        color={getActionColor(log.action)}
                         size="small"
                       />
                     </TableCell>
-                    <TableCell>{log.resource}</TableCell>
+                    <TableCell>
+                      {getResourceDisplayName(log.resource)}
+                    </TableCell>
                     <TableCell sx={{ maxWidth: 200 }}>
                       <Typography variant="body2" noWrap>
-                        {log.details}
+                        {log.resource_id}
                       </Typography>
                     </TableCell>
-                    <TableCell>{log.ip_address}</TableCell>
-                    <TableCell>
-                      {new Date(log.created_at).toLocaleString()}
-                    </TableCell>
+                    <TableCell>{formatUTCDate(log.created_at)}</TableCell>
                     <TableCell>
                       <IconButton
                         size="small"
@@ -298,6 +341,18 @@ const AuditLogs = () => {
         </TableContainer>
       </Paper>
 
+      {/* Pagination */}
+      {pagination.pages > 1 && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+          <Pagination
+            count={pagination.pages}
+            page={currentPage}
+            onChange={handlePageChange}
+            color="primary"
+          />
+        </Box>
+      )}
+
       {/* Log Details Dialog */}
       <Dialog
         open={openDialog}
@@ -313,50 +368,30 @@ const AuditLogs = () => {
                 sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
               >
                 <Typography variant="subtitle2">User:</Typography>
-                <Typography>{selectedLog.user_name}</Typography>
+                <Typography>
+                  {selectedLog.user?.name ||
+                    `User ID: ${selectedLog.created_by}`}
+                </Typography>
 
                 <Typography variant="subtitle2">Action:</Typography>
-                <Chip
-                  label={selectedLog.action}
-                  color={getActionColor(selectedLog.action) as any}
-                  size="small"
-                />
+                <Typography>
+                  {getActionDisplayName(selectedLog.action)}
+                </Typography>
 
                 <Typography variant="subtitle2">Resource:</Typography>
-                <Typography>{selectedLog.resource}</Typography>
+                <Typography>
+                  {getResourceDisplayName(selectedLog.resource)}
+                </Typography>
 
                 <Typography variant="subtitle2">Resource ID:</Typography>
                 <Typography>{selectedLog.resource_id}</Typography>
 
-                <Typography variant="subtitle2">IP Address:</Typography>
-                <Typography>{selectedLog.ip_address}</Typography>
+                <Typography variant="subtitle2">Created:</Typography>
+                <Typography>{formatUTCDate(selectedLog.created_at)}</Typography>
 
-                <Typography variant="subtitle2">Timestamp:</Typography>
-                <Typography>
-                  {new Date(selectedLog.created_at).toLocaleString()}
-                </Typography>
+                <Typography variant="subtitle2">Updated:</Typography>
+                <Typography>{formatUTCDate(selectedLog.updated_at)}</Typography>
               </Box>
-
-              <Typography variant="subtitle2">Details:</Typography>
-              <Typography
-                variant="body2"
-                sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}
-              >
-                {selectedLog.details}
-              </Typography>
-
-              <Typography variant="subtitle2">User Agent:</Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  p: 2,
-                  bgcolor: "grey.50",
-                  borderRadius: 1,
-                  wordBreak: "break-all",
-                }}
-              >
-                {selectedLog.user_agent}
-              </Typography>
             </Box>
           )}
         </DialogContent>

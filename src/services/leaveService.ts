@@ -2,25 +2,27 @@ import api from "./api";
 import type { ApiResponse, Pagination } from "./api";
 import type { User } from "./authService";
 
-// Types based on the dummy responses
+// Types based on the updated database schema
 export interface Leave {
   id: number;
-  user_id: number;
+  created_by: number;
+  manager_id?: number | null;
   from_date: string;
   to_date: string;
-  type: string;
+  type: "casual" | "sick" | "earned";
   reason: string;
   status: "pending" | "approved" | "rejected";
   manager_comment?: string | null;
   created_at: string;
   updated_at: string;
   user: User;
+  manager?: User;
 }
 
 export interface LeaveBalance {
   id: number;
   user_id: number;
-  type: string;
+  type: "casual" | "sick" | "earned";
   balance: number;
   year: number;
 }
@@ -41,7 +43,7 @@ export interface LeaveBalancesResponse {
 export interface CreateLeaveRequest {
   from_date: string;
   to_date: string;
-  type: string;
+  type: "casual" | "sick" | "earned";
   reason: string;
 }
 

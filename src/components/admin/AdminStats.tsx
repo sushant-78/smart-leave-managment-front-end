@@ -7,19 +7,12 @@ import {
   CardContent,
   Typography,
   CircularProgress,
-  Alert,
   Paper,
 } from "@mui/material";
-import {
-  People,
-  Event,
-  Pending,
-  Warning,
-  TrendingUp,
-  TrendingDown,
-} from "@mui/icons-material";
+import { People, Event, Pending, Warning } from "@mui/icons-material";
 import type { RootState, AppDispatch } from "../../store";
 import { fetchDashboardStats } from "../../store/adminSlice";
+import { showToast } from "../../utils/toast";
 
 const StatCard = ({
   title,
@@ -59,15 +52,42 @@ const StatCard = ({
 
 const AdminStats = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { stats, loading, error } = useSelector(
+  const { dashboardStats, loading, error } = useSelector(
     (state: RootState) => state.admin
   ) as {
-    stats: {
-      totalUsers: number;
-      totalLeaves: number;
-      pendingLeaves: number;
-      unassignedUsers: number;
-      leaveTypes: string[];
+    dashboardStats: {
+      users: {
+        total: number;
+        employees: number;
+        managers: number;
+        unassigned: number;
+      };
+      leaves: {
+        total: number;
+        pending: number;
+        approved: number;
+        rejected: number;
+      };
+      system: {
+        currentYear: number;
+        configSet: boolean;
+      };
+      recentActivities: Array<{
+        id: number;
+        action_by: number;
+        action_type: string;
+        action_target: string;
+        timestamp: string;
+        user: {
+          name: string;
+          email: string;
+          role: string;
+        };
+      }>;
+      leaveTypeStats: Array<{
+        type: string;
+        count: number;
+      }>;
     } | null;
     loading: boolean;
     error: string | null;
@@ -77,11 +97,29 @@ const AdminStats = () => {
     dispatch(fetchDashboardStats());
   }, [dispatch]);
 
+  // Handle error with toast
+  useEffect(() => {
+    if (error) {
+      showToast.error("Failed to fetch dashboard stats. Please try again.");
+    }
+  }, [error]);
+
   if (error) {
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        {error}
-      </Alert>
+      <Box>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Admin Dashboard
+        </Typography>
+
+        <Paper sx={{ p: 4, textAlign: "center" }}>
+          <Typography variant="h6" color="textSecondary" gutterBottom>
+            Something went wrong while fetching data
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            Unable to load dashboard statistics at this time.
+          </Typography>
+        </Paper>
+      </Box>
     );
   }
 
@@ -91,16 +129,12 @@ const AdminStats = () => {
         Admin Dashboard
       </Typography>
 
-      <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
-        Overview of system statistics and recent activities
-      </Typography>
-
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Users"
-            value={stats?.totalUsers || 0}
+            value={dashboardStats?.users.total || 0}
             icon={<People />}
             color="primary.main"
             loading={loading}
@@ -110,7 +144,7 @@ const AdminStats = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Leaves"
-            value={stats?.totalLeaves || 0}
+            value={dashboardStats?.leaves.total || 0}
             icon={<Event />}
             color="success.main"
             loading={loading}
@@ -120,7 +154,7 @@ const AdminStats = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Pending Approvals"
-            value={stats?.pendingLeaves || 0}
+            value={dashboardStats?.leaves.pending || 0}
             icon={<Pending />}
             color="warning.main"
             loading={loading}
@@ -130,62 +164,11 @@ const AdminStats = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Unassigned Users"
-            value={stats?.unassignedUsers || 0}
+            value={dashboardStats?.users.unassigned || 0}
             icon={<Warning />}
             color="error.main"
             loading={loading}
           />
-        </Grid>
-      </Grid>
-
-      {/* Quick Actions */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Quick Actions
-            </Typography>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <Typography variant="body2" color="textSecondary">
-                • Create new user
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                • Configure system settings
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                • View audit logs
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                • Manage leave requests
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              System Status
-            </Typography>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <TrendingUp color="success" />
-                <Typography variant="body2">System running normally</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <TrendingDown color="warning" />
-                <Typography variant="body2">
-                  Pending approvals: {stats?.pendingLeaves || 0}
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Warning color="error" />
-                <Typography variant="body2">
-                  Unassigned users: {stats?.unassignedUsers || 0}
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
         </Grid>
       </Grid>
     </Box>

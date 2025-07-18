@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { showToast } from "../utils/toast";
 import {
   Paper,
   TextField,
   Button,
   Typography,
   Box,
-  Alert,
   CircularProgress,
 } from "@mui/material";
 import { LockOutlined, Visibility, VisibilityOff } from "@mui/icons-material";
@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import type { RootState, AppDispatch } from "../store";
-import { login, clearError } from "../store/authSlice";
+import { login, clearError, getCurrentUser } from "../store/authSlice";
 import type { User } from "../services/authService";
 
 const schema = yup
@@ -27,9 +27,7 @@ const schema = yup
     password: yup
       .string()
       .required("Password is required")
-      .min(6, "Password must be at least 6 characters")
-      .matches(/[a-zA-Z]/, "Password must contain at least one letter")
-      .matches(/[0-9]/, "Password must contain at least one number"),
+      .min(6, "Password must be at least 6 characters"),
   })
   .required();
 
@@ -49,7 +47,6 @@ const LoginPage = () => {
     isAuthenticated: boolean;
     user: User | null;
   };
-  const [showAlert, setShowAlert] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -62,7 +59,12 @@ const LoginPage = () => {
   });
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    // If authenticated but no user data, fetch current user
+    if (isAuthenticated && !user) {
+      dispatch(getCurrentUser());
+    }
+    // If authenticated and have user data, redirect
+    else if (isAuthenticated && user) {
       // Redirect based on user role
       if (user.role === "admin") {
         navigate("/admin");
@@ -72,16 +74,12 @@ const LoginPage = () => {
         navigate("/dashboard");
       }
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, dispatch]);
 
   useEffect(() => {
     if (error) {
-      setShowAlert(true);
-      const timer = setTimeout(() => {
-        setShowAlert(false);
-        dispatch(clearError());
-      }, 5000);
-      return () => clearTimeout(timer);
+      showToast.error(error);
+      dispatch(clearError());
     }
   }, [error, dispatch]);
 
@@ -106,18 +104,18 @@ const LoginPage = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 2,
+        padding: { xs: 1, sm: 2 },
       }}
     >
       <Paper
         elevation={3}
         sx={{
-          padding: 4,
+          padding: { xs: 2, sm: 4 },
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           width: "100%",
-          maxWidth: "400px",
+          maxWidth: { xs: "100%", sm: "400px" },
           borderRadius: 2,
         }}
       >
@@ -158,19 +156,6 @@ const LoginPage = () => {
         >
           Sign in to your account
         </Typography>
-
-        {showAlert && error && (
-          <Alert
-            severity="error"
-            sx={{
-              width: "100%",
-              mb: 2,
-              borderRadius: 1,
-            }}
-          >
-            {error}
-          </Alert>
-        )}
 
         <Box
           component="form"

@@ -12,7 +12,6 @@ import {
   TableRow,
   IconButton,
   Chip,
-  Alert,
   CircularProgress,
   TextField,
   FormControl,
@@ -35,6 +34,8 @@ import {
 import type { RootState, AppDispatch } from "../../store";
 import { fetchLeaves, approveLeave } from "../../store/leaveSlice";
 import type { Leave } from "../../services/leaveService";
+import { showToast } from "../../utils/toast";
+import { formatUTCDateOnly } from "../../utils/dateUtils";
 
 const LeaveOversight = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -55,6 +56,13 @@ const LeaveOversight = () => {
     dispatch(fetchLeaves({ page: 1, limit: 50 }));
   }, [dispatch]);
 
+  // Handle error state with toast
+  useEffect(() => {
+    if (error) {
+      showToast.error(error);
+    }
+  }, [error]);
+
   const handleViewLeave = (leave: Leave) => {
     setSelectedLeave(leave);
     setOpenDialog(true);
@@ -65,29 +73,39 @@ const LeaveOversight = () => {
     setSelectedLeave(null);
   };
 
-  const handleApproveLeave = (leaveId: number) => {
-    dispatch(
-      approveLeave({
-        leaveId,
-        approvalData: {
-          status: "approved",
-          manager_comment: "Approved by admin",
-        },
-      })
-    );
+  const handleApproveLeave = async (leaveId: number) => {
+    try {
+      await dispatch(
+        approveLeave({
+          leaveId,
+          approvalData: {
+            status: "approved",
+            manager_comment: "Approved by admin",
+          },
+        })
+      ).unwrap();
+      showToast.success("Leave approved successfully!");
+    } catch {
+      showToast.error("Failed to approve leave. Please try again.");
+    }
   };
 
-  const handleRejectLeave = (leaveId: number) => {
+  const handleRejectLeave = async (leaveId: number) => {
     const reason = prompt("Please provide a reason for rejection (optional):");
-    dispatch(
-      approveLeave({
-        leaveId,
-        approvalData: {
-          status: "rejected",
-          manager_comment: reason || "Rejected by admin",
-        },
-      })
-    );
+    try {
+      await dispatch(
+        approveLeave({
+          leaveId,
+          approvalData: {
+            status: "rejected",
+            manager_comment: reason || "Rejected by admin",
+          },
+        })
+      ).unwrap();
+      showToast.success("Leave rejected successfully!");
+    } catch {
+      showToast.error("Failed to reject leave. Please try again.");
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -113,14 +131,6 @@ const LeaveOversight = () => {
       leave.type.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
-
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        {error}
-      </Alert>
-    );
-  }
 
   return (
     <Box>
@@ -210,12 +220,8 @@ const LeaveOversight = () => {
                   <TableRow key={leave.id}>
                     <TableCell>{leave.user?.name || "Unknown"}</TableCell>
                     <TableCell>{leave.type}</TableCell>
-                    <TableCell>
-                      {new Date(leave.from_date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(leave.to_date).toLocaleDateString()}
-                    </TableCell>
+                    <TableCell>{formatUTCDateOnly(leave.from_date)}</TableCell>
+                    <TableCell>{formatUTCDateOnly(leave.to_date)}</TableCell>
                     <TableCell>
                       {Math.ceil(
                         (new Date(leave.to_date).getTime() -

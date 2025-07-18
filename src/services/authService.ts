@@ -1,5 +1,6 @@
 import api from "./api";
 import type { ApiResponse } from "./api";
+import { STORAGE_KEYS } from "../utils/constants";
 
 // Types based on the dummy responses
 export interface User {
@@ -55,28 +56,28 @@ export const authService = {
 
   // Check if user is authenticated
   isAuthenticated(): boolean {
-    return !!localStorage.getItem("token");
+    return !!localStorage.getItem(STORAGE_KEYS.TOKEN);
   },
 
   // Get stored token
   getToken(): string | null {
-    return localStorage.getItem("token");
+    return localStorage.getItem(STORAGE_KEYS.TOKEN);
   },
 
   // Get stored user ID
   getUserId(): string | null {
-    return localStorage.getItem("user_id");
+    return localStorage.getItem(STORAGE_KEYS.USER_ID);
   },
 
   // Store auth data
   storeAuthData(token: string, userId: string): void {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user_id", userId);
+    localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+    localStorage.setItem(STORAGE_KEYS.USER_ID, userId);
   },
 
   // Clear auth data
   clearAuthData(): void {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user_id");
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER_ID);
   },
 };

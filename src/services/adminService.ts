@@ -7,12 +7,17 @@ import type { Leave } from "./leaveService";
 export interface SystemConfig {
   id: number;
   year: number;
+  holidays: Record<string, string>;
   working_days_per_week: number;
-  holidays: string[];
   leave_types: Record<string, number>;
-  is_locked: boolean;
-  created_at: string;
-  updated_at: string;
+  created_by?: number | null; // References users(id), nullable
+  createdAt: string;
+  updatedAt: string;
+  creator?: {
+    id: number;
+    name: string;
+    email: string;
+  };
 }
 
 export interface DashboardStats {
@@ -31,7 +36,6 @@ export interface DashboardStats {
   system: {
     currentYear: number;
     configSet: boolean;
-    configLocked: boolean;
   };
   recentActivities: Array<{
     id: number;
@@ -49,11 +53,12 @@ export interface DashboardStats {
 
 export interface AuditLog {
   id: number;
-  action_by: number;
-  action_type: string;
-  action_target: string;
-  details?: Record<string, unknown>;
-  timestamp: string;
+  created_by: number | null;
+  resource: string;
+  resource_id: string;
+  action: string;
+  created_at: string;
+  updated_at: string;
   user?: User;
 }
 
@@ -62,10 +67,18 @@ export interface AuditLogsResponse {
   pagination: Pagination;
 }
 
-export interface CreateConfigRequest {
+export interface UpdateHolidaysRequest {
+  year: number;
+  holidays: Record<string, string>; // Changed to key-value pairs
+}
+
+export interface UpdateWorkingDaysRequest {
   year: number;
   working_days_per_week: number;
-  holidays: string[];
+}
+
+export interface UpdateLeaveTypesRequest {
+  year: number;
   leave_types: Record<string, number>;
 }
 
@@ -101,23 +114,41 @@ export const adminService = {
     return response.data;
   },
 
-  // Set yearly configuration
-  async setConfig(
-    configData: CreateConfigRequest
+  // Update holidays for a specific year (upsert)
+  async updateHolidays(
+    holidaysData: UpdateHolidaysRequest
   ): Promise<ApiResponse<{ config: SystemConfig }>> {
     const response = await api.post<ApiResponse<{ config: SystemConfig }>>(
-      "/admin/config",
-      configData
+      `/admin/config/${holidaysData.year}/holidays`,
+      {
+        holidays: holidaysData.holidays,
+      }
     );
     return response.data;
   },
 
-  // Lock configuration for the year
-  async lockConfig(
-    year: number
+  // Update working days for a specific year (upsert)
+  async updateWorkingDays(
+    workingDaysData: UpdateWorkingDaysRequest
   ): Promise<ApiResponse<{ config: SystemConfig }>> {
-    const response = await api.put<ApiResponse<{ config: SystemConfig }>>(
-      `/admin/config/${year}/lock`
+    const response = await api.post<ApiResponse<{ config: SystemConfig }>>(
+      `/admin/config/${workingDaysData.year}/working-days`,
+      {
+        working_days_per_week: workingDaysData.working_days_per_week,
+      }
+    );
+    return response.data;
+  },
+
+  // Update leave types for a specific year (upsert)
+  async updateLeaveTypes(
+    leaveTypesData: UpdateLeaveTypesRequest
+  ): Promise<ApiResponse<{ config: SystemConfig }>> {
+    const response = await api.post<ApiResponse<{ config: SystemConfig }>>(
+      `/admin/config/${leaveTypesData.year}/leave-types`,
+      {
+        leave_types: leaveTypesData.leave_types,
+      }
     );
     return response.data;
   },
@@ -153,6 +184,30 @@ export const adminService = {
     return response.data;
   },
 
+  // Get all audit logs with filters
+  async getAuditLogsWithFilters(
+    params: {
+      page?: number;
+      limit?: number;
+      user_id?: number;
+      action_type?: string;
+    } = {}
+  ): Promise<ApiResponse<AuditLogsResponse>> {
+    const searchParams = new URLSearchParams();
+
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.limit) searchParams.append("limit", params.limit.toString());
+    if (params.user_id)
+      searchParams.append("user_id", params.user_id.toString());
+    if (params.action_type)
+      searchParams.append("action_type", params.action_type);
+
+    const response = await api.get<ApiResponse<AuditLogsResponse>>(
+      `/audit?${searchParams.toString()}`
+    );
+    return response.data;
+  },
+
   // Get current user's audit logs
   async getMyAuditLogs(
     page = 1,
@@ -160,18 +215,6 @@ export const adminService = {
   ): Promise<ApiResponse<AuditLogsResponse>> {
     const response = await api.get<ApiResponse<AuditLogsResponse>>(
       `/audit/me?page=${page}&limit=${limit}`
-    );
-    return response.data;
-  },
-
-  // Get audit logs for specific user
-  async getUserAuditLogs(
-    userId: number,
-    page = 1,
-    limit = 20
-  ): Promise<ApiResponse<AuditLogsResponse>> {
-    const response = await api.get<ApiResponse<AuditLogsResponse>>(
-      `/audit/user/${userId}?page=${page}&limit=${limit}`
     );
     return response.data;
   },

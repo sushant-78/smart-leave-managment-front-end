@@ -1,10 +1,9 @@
 export interface SystemConfig {
   id: number;
   year: number;
-  working_days_per_week: 4 | 5 | 6;
-  holidays: string[];
-  leave_types: string[];
-  is_locked: boolean;
+  holidays: Record<string, string>;
+  working_days_per_week: number;
+  leave_types: Record<string, number>;
   created_at: string;
   updated_at: string;
 }

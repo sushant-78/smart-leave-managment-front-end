@@ -21,14 +21,14 @@ export interface CreateUserRequest {
   email: string;
   password: string;
   role: "employee" | "manager";
-  manager_id?: number;
+  manager_id?: number | null;
 }
 
 export interface UpdateUserRequest {
   name?: string;
   email?: string;
   role?: "employee" | "manager";
-  manager_id?: number;
+  manager_id?: number | null;
 }
 
 // User management service
@@ -79,7 +79,7 @@ export const userService = {
     id: number,
     userData: UpdateUserRequest
   ): Promise<ApiResponse<{ user: User }>> {
-    const response = await api.put<ApiResponse<{ user: User }>>(
+    const response = await api.patch<ApiResponse<{ user: User }>>(
       `/users/${id}`,
       userData
     );

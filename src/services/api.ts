@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { AxiosInstance, AxiosResponse, AxiosError } from "axios";
+import { STORAGE_KEYS } from "../utils/constants";
 
 // API base URL - will be set from environment variables
 const API_BASE_URL =
@@ -16,7 +17,7 @@ const api: AxiosInstance = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -34,10 +35,12 @@ api.interceptors.response.use(
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem("token");
-      localStorage.removeItem("user_id");
-      window.location.href = "/login";
+      // Token expired or invalid - clear auth data and dispatch event
+      localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER_ID);
+
+      // Dispatch custom event for components to handle
+      window.dispatchEvent(new CustomEvent("unauthorized"));
     }
     return Promise.reject(error);
   }

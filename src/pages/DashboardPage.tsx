@@ -1,5 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { showToast } from "../utils/toast";
+import { formatUTCDateOnly } from "../utils/dateUtils";
 import {
   Container,
   Typography,
@@ -31,6 +33,7 @@ const DashboardPage = () => {
 
   const handleLogout = () => {
     dispatch(logout());
+    showToast.success("Logged out successfully");
     navigate("/login");
   };
 
@@ -97,13 +100,18 @@ const DashboardPage = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container
+      maxWidth="lg"
+      sx={{ mt: { xs: 2, sm: 4 }, mb: { xs: 2, sm: 4 } }}
+    >
       <Box
         sx={{
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "flex-start", sm: "center" },
           mb: 4,
+          gap: { xs: 2, sm: 0 },
         }}
       >
         <Box>
@@ -130,7 +138,7 @@ const DashboardPage = () => {
         sx={{
           display: "flex",
           flexDirection: { xs: "column", md: "row" },
-          gap: 3,
+          gap: { xs: 2, md: 3 },
         }}
       >
         <Box sx={{ flex: 1 }}>
@@ -179,7 +187,7 @@ const DashboardPage = () => {
               )}
               <Typography variant="body2" color="text.secondary">
                 <strong>Member since:</strong>{" "}
-                {new Date(user?.created_at || "").toLocaleDateString()}
+                {formatUTCDateOnly(user?.created_at || "")}
               </Typography>
             </CardContent>
           </Card>
